@@ -62,7 +62,12 @@ export default function BatchDetailPage() {
           {metric('Сохранность', metrics.survival_pct !== null ? `${metrics.survival_pct} %` : null)}
           {metric('FCR', metrics.fcr !== null ? String(metrics.fcr) : null)}
           {metric('Корм съеден', `${metrics.feed_kg} кг`)}
-          {metric('Живой вес', `${metrics.live_weight_kg} кг`)}
+          {metric(
+            'Живой вес (по забоям)',
+            metrics.slaughtered_head > 0
+              ? `${metrics.live_weight_kg} кг (ср. ${(metrics.live_weight_kg / metrics.slaughtered_head).toFixed(2)} кг/гол)`
+              : `${metrics.live_weight_kg} кг`,
+          )}
           {metric('Продукция (по забою)', `${metrics.output_kg} кг`)}
           {metric('Выход', metrics.output_pct !== null ? `${metrics.output_pct} %` : null)}
           {metric('Прямые затраты', `${metrics.direct_costs} ₽`)}

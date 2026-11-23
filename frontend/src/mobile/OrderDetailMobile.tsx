@@ -3,7 +3,7 @@
 
 import { Link, useParams } from 'react-router-dom'
 import { Button, Card, ErrorBox, Page } from '../components/ui'
-import { StatusBadge, unitLabel } from '../pages/orders/ordersShared'
+import { StatusBadge, fulfillmentPriceView, unitLabel } from '../pages/orders/ordersShared'
 import { useOrderDetail } from '../pages/orders/useOrderDetail'
 import SaleModal from '../pages/orders/SaleModal'
 
@@ -106,6 +106,7 @@ export default function OrderDetailMobile() {
             {order.fulfillments.map((f) => {
               const m = order.metrics.find((x) => x.item_id === f.item_id)
               const label = f.sale_kind === 'egg_sale' ? 'Яйцо' : (m?.product_type_name ?? 'Продукция')
+              const pv = fulfillmentPriceView(f)
               return (
                 <Card key={f.id} className="!p-3">
                   <div className="flex items-center gap-2">
@@ -115,7 +116,7 @@ export default function OrderDetailMobile() {
                   </div>
                   <p className="mt-0.5 text-sm text-slate-500">
                     {new Date(f.sale_date + 'T00:00:00').toLocaleDateString()} · {c.fmt(f.actual_qty)}{' '}
-                    {unitLabel(f.unit)} по {c.fmt(f.price)} {f.sale_kind === 'egg_sale' ? '₽/дес' : '₽/кг'}
+                    {unitLabel(f.unit)} по {pv.price} {pv.label}
                   </p>
                   <div className="mt-2 border-t border-slate-100 pt-2">
                     <button

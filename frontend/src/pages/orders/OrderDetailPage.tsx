@@ -8,7 +8,7 @@ import {
   ErrorBox,
   Page,
 } from '../../components/ui'
-import { StatusBadge, unitLabel } from './ordersShared'
+import { StatusBadge, fulfillmentPriceView, unitLabel } from './ordersShared'
 import { useOrderDetail } from './useOrderDetail'
 import SaleModal from './SaleModal'
 
@@ -143,7 +143,7 @@ export default function OrderDetailPage() {
                 {order.fulfillments.map((f) => {
                   const m = order.metrics.find((x) => x.item_id === f.item_id)
                   const label = f.sale_kind === 'egg_sale' ? 'Яйцо' : (m?.product_type_name ?? 'Продукция')
-                  const priceUnit = f.sale_kind === 'egg_sale' ? '₽/дес' : '₽/кг'
+                  const pv = fulfillmentPriceView(f)
                   return (
                     <tr key={f.id} className="border-t border-slate-100">
                       <td className="py-2 pr-2">
@@ -153,8 +153,8 @@ export default function OrderDetailPage() {
                       <td className="py-2 pr-2">
                         {c.fmt(f.actual_qty)} {unitLabel(f.unit)}
                       </td>
-                      <td className="py-2 pr-2">
-                        {c.fmt(f.price)} {priceUnit}
+                      <td className="py-2 pr-2" title={pv.title}>
+                        {pv.price} {pv.label}
                       </td>
                       <td className="py-2 pr-2 text-right">{c.fmt(f.amount)} ₽</td>
                       <td className="py-2 text-right">

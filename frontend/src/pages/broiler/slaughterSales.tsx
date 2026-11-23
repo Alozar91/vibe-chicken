@@ -126,7 +126,8 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
           <li key={s.id} className="py-2 text-sm">
             <div className="flex items-center gap-2">
               <span className="min-w-0 flex-1 text-slate-700">
-                {s.date} — {s.head_count} гол · живой вес {s.live_weight_kg} кг
+                {s.date} — {s.head_count} гол · живой вес всего {s.live_weight_kg} кг
+                {s.head_count > 0 && ` (≈ ${(s.live_weight_kg / s.head_count).toFixed(2)} кг/гол)`}
               </span>
               <button
                 className="text-xs text-amber-600 hover:underline"

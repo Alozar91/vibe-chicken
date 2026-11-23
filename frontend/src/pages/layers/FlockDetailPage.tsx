@@ -65,7 +65,7 @@ export default function FlockDetailPage() {
         {metric('Поголовье', String(metrics.current_head))}
         {metric('Собрано яиц', String(metrics.eggs_total))}
         {metric('Яйценоскость (7 дн)', metrics.lay_rate_pct !== null ? `${metrics.lay_rate_pct} %` : '—')}
-        {metric('Сами съели', String(metrics.selfuse_total))}
+        {metric('Съели сами, шт', String(metrics.selfuse_total))}
         {metric('Продано десятков', String(metrics.dozens_sold))}
         {metric('Выручка за яйцо', `${fmt2(metrics.egg_revenue)} ₽`)}
         {metric('Корм съеден', `${fmt(metrics.feed_kg)} кг`)}

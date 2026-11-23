@@ -59,16 +59,28 @@ export function categoryPieOption(slices: CategorySlice[], title: string): EChar
 }
 
 export function eggsOption(points: EggMonthPoint[]): EChartsOption {
+  // все серии в штуках (десятки × 10) — иначе шт и дес не сравнить на одной оси
   return {
-    color: ['#d97706', '#0ea5e9'],
+    color: ['#d97706', '#94a3b8', '#0ea5e9'],
     tooltip: { trigger: 'axis' },
-    legend: { data: ['Собрано, шт', 'Продано, десятков'], textStyle: { color: '#475569' }, top: 0 },
+    legend: {
+      data: ['Собрано, шт', 'Съели сами, шт', 'Продано, шт'],
+      textStyle: { color: '#475569' },
+      top: 0,
+    },
     grid: { left: 56, right: 16, top: 48, bottom: 44 },
     xAxis: { type: 'category', data: points.map((p) => p.month), ...xAxisStyle },
     yAxis: { type: 'value', ...axisStyle },
     series: [
       { name: 'Собрано, шт', type: 'bar', data: points.map((p) => p.collected) },
-      { name: 'Продано, десятков', type: 'line', smooth: true, data: points.map((p) => p.dozens_sold) },
+      { name: 'Съели сами, шт', type: 'bar', data: points.map((p) => p.selfused) },
+      {
+        name: 'Продано, шт',
+        type: 'line',
+        smooth: true,
+        data: points.map((p) => p.dozens_sold * 10),
+        tooltip: { valueFormatter: (v) => `${Number(v)} шт (${Math.round(Number(v) / 10)} дес)` },
+      },
     ],
   }
 }

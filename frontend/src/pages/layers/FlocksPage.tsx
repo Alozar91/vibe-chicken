@@ -404,7 +404,7 @@ export default function FlocksPage() {
               <TextInput
                 value={saleForm.price_per_ten}
                 onChange={(v) => setSaleForm({ ...saleForm, price_per_ten: v })}
-                placeholder="Цена за 10 шт, ₽"
+                placeholder="Цена за десяток, ₽"
               />
               <PriceDictButton onClick={() => void applyEggDictPrice()} />
             </div>

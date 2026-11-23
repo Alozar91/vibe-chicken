@@ -19,6 +19,24 @@ interface Row {
 const emptyRow: Row = { kind: 'egg', product_type_id: '', qty: '', price: '' }
 const today = () => new Date().toISOString().slice(0, 10)
 
+/** Подписи полей позиции в зависимости от единицы: яйцо — десятки,
+ *  тушка — штуки (₽/шт), остальная продукция — кг (₽/кг). */
+type ProductTypeLike = { id: number; unit: string }
+
+function rowQtyLabel(r: Row, productTypes: ProductTypeLike[]): string {
+  if (r.kind === 'egg') return 'Количество, десятков'
+  const pt = productTypes.find((p) => String(p.id) === r.product_type_id)
+  if (!pt) return 'Количество'
+  return pt.unit === 'pieces' ? 'Количество, штук' : 'Количество, кг'
+}
+
+function rowPriceLabel(r: Row, productTypes: ProductTypeLike[]): string {
+  if (r.kind === 'egg') return 'Цена за десяток (необяз.)'
+  const pt = productTypes.find((p) => String(p.id) === r.product_type_id)
+  if (!pt) return 'Цена за ед. (необяз.)'
+  return pt.unit === 'pieces' ? 'Цена за штуку (необяз.)' : 'Цена за кг (необяз.)'
+}
+
 export default function OrderFormPage() {
   const { id } = useParams()
   const orderId = id ? Number(id) : null
@@ -177,11 +195,15 @@ export default function OrderFormPage() {
                       </label>
                     )}
                     <label className="block text-sm">
-                      <span className="mb-1 block text-xs text-slate-400">Количество</span>
+                      <span className="mb-1 block text-xs text-slate-400">
+                        {rowQtyLabel(r, productTypes)}
+                      </span>
                       <TextInput value={r.qty} onChange={(v) => setRow(i, { qty: v })} required />
                     </label>
                     <label className="block text-sm">
-                      <span className="mb-1 block text-xs text-slate-400">Цена за ед. (необяз.)</span>
+                      <span className="mb-1 block text-xs text-slate-400">
+                        {rowPriceLabel(r, productTypes)}
+                      </span>
                       <TextInput value={r.price} onChange={(v) => setRow(i, { price: v })} />
                     </label>
                   </div>
