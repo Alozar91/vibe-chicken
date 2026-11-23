@@ -110,6 +110,25 @@ export function PriceDictButton({ onClick, disabled = false }: { onClick: () => 
   )
 }
 
+/** Кнопка-иконка «определить координаты по адресу» (геокодер, маршруты §4.8). */
+export function GeocodeButton({ onClick, disabled = false }: { onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title="Определить координаты по адресу"
+      aria-label="Определить координаты по адресу"
+      className="flex h-[38px] w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition hover:border-amber-400 hover:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:opacity-50"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+        <circle cx="12" cy="10" r="3" />
+      </svg>
+    </button>
+  )
+}
+
 export function TextInput({
   value,
   onChange,

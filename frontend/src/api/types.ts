@@ -33,6 +33,8 @@ export interface Buyer {
   name: string
   phone: string | null
   address: string | null
+  lat: number | null
+  lon: number | null
 }
 
 export interface ProductType {

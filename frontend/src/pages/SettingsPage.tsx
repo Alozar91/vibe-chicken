@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getPrices, updateProductType } from '../api/dictionaries'
 import { listSettings, updateSetting } from '../api/settings'
+import { geocodeAddress } from '../api/geocode'
 import { createBackup, listBackups } from '../api/backups'
 import { changePassword } from '../api/auth'
 import type { AppSetting, Prices } from '../api/types'
 import type { BackupInfo } from '../api/backups'
-import { Button, Card, ErrorBox, Page, TextInput } from '../components/ui'
+import { parseCoords } from '../lib/coords'
+import { Button, Card, ErrorBox, GeocodeButton, Page, TextInput } from '../components/ui'
 
 export default function SettingsPage() {
   const [items, setItems] = useState<AppSetting[]>([])
@@ -238,7 +240,97 @@ export default function SettingsPage() {
       </Card>
 
       <PasswordCard />
+      <FarmAddressCard />
     </Page>
+  )
+}
+
+/** Адрес и координаты хозяйства — стартовая точка всех маршрутов (§4.8). */
+function FarmAddressCard() {
+  const [address, setAddress] = useState('')
+  const [coords, setCoords] = useState('')
+  const [geoHint, setGeoHint] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const items = await listSettings()
+        const byKey = Object.fromEntries(items.map((s) => [s.key, s.value]))
+        setAddress(byKey['farm_address'] ?? '')
+        const lat = byKey['farm_lat'] ?? ''
+        const lon = byKey['farm_lon'] ?? ''
+        setCoords(lat && lon ? `${lat}, ${lon}` : '')
+      } catch {
+        /* настройки подтянутся при следующем обновлении */
+      }
+    })()
+  }, [])
+
+  const detect = async () => {
+    if (!address.trim()) return
+    setBusy(true)
+    setGeoHint(null)
+    try {
+      const p = await geocodeAddress(address.trim())
+      setCoords(`${p.lat}, ${p.lon}`)
+      setGeoHint(`Найдено: ${p.label}`)
+    } catch (e) {
+      setGeoHint(e instanceof Error ? e.message : 'Не удалось определить')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const save = async () => {
+    setBusy(true)
+    setError(null)
+    setSaved(false)
+    try {
+      const parsed = coords.trim() ? parseCoords(coords) : null
+      if (coords.trim() && !parsed) throw new Error('Координаты не распознаны — формат: 54.1839, 45.1849')
+      await updateSetting('farm_address', address.trim())
+      await updateSetting('farm_lat', parsed ? String(parsed.lat) : '')
+      await updateSetting('farm_lon', parsed ? String(parsed.lon) : '')
+      setSaved(true)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка сохранения')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="mt-4">
+      <h2 className="font-semibold text-slate-900">Адрес хозяйства</h2>
+      <p className="mt-0.5 text-xs text-slate-400">
+        Стартовая точка маршрутов доставки. Координаты определяются кнопкой по адресу или
+        вставляются из Яндекс.Карт.
+      </p>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void save()
+        }}
+        className="mt-3 space-y-2"
+      >
+        <div className="flex gap-2">
+          <TextInput value={address} onChange={setAddress} placeholder="Адрес хозяйства (село, улица, дом)" />
+          <GeocodeButton onClick={() => void detect()} disabled={busy || !address.trim()} />
+        </div>
+        <TextInput value={coords} onChange={setCoords} placeholder="Координаты: 54.1839, 45.1849" />
+        {geoHint && <p className="text-xs text-slate-500">{geoHint}</p>}
+        <div className="flex items-center gap-3">
+          <Button type="submit" disabled={busy}>
+            Сохранить
+          </Button>
+          {saved && <span className="text-sm text-green-700">✓ Сохранено</span>}
+          {error && <span className="text-sm text-red-600">{error}</span>}
+        </div>
+      </form>
+    </Card>
   )
 }
 

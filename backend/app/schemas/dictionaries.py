@@ -1,6 +1,6 @@
 """Pydantic-схемы справочников."""
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Literal
 
 
@@ -59,6 +59,15 @@ class BuyerIn(BaseModel):
     name: str = Field(max_length=150)
     phone: str | None = Field(default=None, max_length=30)
     address: str | None = Field(default=None, max_length=300)
+    # Координаты для маршрутов; если одна задана — должна быть и вторая
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lon: float | None = Field(default=None, ge=-180, le=180)
+
+    @model_validator(mode="after")
+    def _coords_pair(self):
+        if (self.lat is None) != (self.lon is None):
+            raise ValueError("Укажите обе координаты — широту и долготу")
+        return self
 
 
 class BuyerOut(BuyerIn):
