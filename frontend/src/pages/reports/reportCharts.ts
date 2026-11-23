@@ -78,8 +78,8 @@ export function buyersOption(rows: BuyerRow[]): EChartsOption {
   return {
     color: ['#d97706', '#16a34a'],
     tooltip: { trigger: 'axis', valueFormatter: (v) => fmt(Number(v)) + ' ₽' },
-    legend: { data: ['Бройлер', 'Яйцо'], textStyle: { color: '#475569' } },
-    grid: { left: 130, right: 24, top: 36, bottom: 28 },
+    legend: { data: ['Бройлер', 'Яйцо'], textStyle: { color: '#475569' }, top: 0 },
+    grid: { left: 130, right: 24, top: 48, bottom: 28 },
     xAxis: { type: 'value', ...axisStyle, axisLabel: { ...axisStyle.axisLabel, formatter: fmt } },
     yAxis: {
       type: 'category',
