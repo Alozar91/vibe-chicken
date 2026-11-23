@@ -12,6 +12,8 @@ import BatchesPage from './pages/broiler/BatchesPage'
 import BatchDetailPage from './pages/broiler/BatchDetailPage'
 import SettingsPage from './pages/SettingsPage'
 import MoneyPage from './pages/money/MoneyPage'
+import FlocksPage from './pages/layers/FlocksPage'
+import FlockDetailPage from './pages/layers/FlockDetailPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 
@@ -52,6 +54,8 @@ export default function App() {
           <Route path="/batches" element={<BatchesPage />} />
           <Route path="/batches/:id" element={<BatchDetailPage />} />
           <Route path="/money" element={<MoneyPage />} />
+          <Route path="/flocks" element={<FlocksPage />} />
+          <Route path="/flocks/:id" element={<FlockDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>

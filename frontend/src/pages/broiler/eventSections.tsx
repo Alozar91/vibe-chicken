@@ -40,7 +40,7 @@ interface EventSectionProps<T> {
   onDelete: (id: number) => Promise<unknown>
 }
 
-function EventSection<T extends { id: number }>({ title, items, renderRow, toForm, form, onCreate, onUpdate, onDelete }: EventSectionProps<T>) {
+export function EventSection<T extends { id: number }>({ title, items, renderRow, toForm, form, onCreate, onUpdate, onDelete }: EventSectionProps<T>) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
