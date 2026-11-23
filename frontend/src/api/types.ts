@@ -65,3 +65,35 @@ export const MONEY_KIND_LABELS: Record<MoneyKind, string> = {
   income: 'Доход',
   expense: 'Расход',
 }
+
+// --- Склад корма ---
+export interface FeedStockRow {
+  feed_category_id: number
+  feed_brand_id: number
+  feed_category_name: string
+  feed_brand_name: string
+  purchased_kg: number
+  used_kg: number
+  adjusted_kg: number
+  stock_kg: number
+}
+
+export interface FeedPurchase {
+  id: number
+  date: string
+  feed_category_id: number
+  feed_brand_id: number
+  vendor_id: number
+  kg: number
+  total_cost: number
+  comment: string | null
+}
+
+export interface FeedAdjustment {
+  id: number
+  date: string
+  feed_category_id: number
+  feed_brand_id: number
+  kg_delta: number
+  comment: string | null
+}

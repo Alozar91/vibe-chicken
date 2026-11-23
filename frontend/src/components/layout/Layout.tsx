@@ -13,6 +13,12 @@ const navSections: { title: string; items: { to: string; label: string }[] }[] =
       { to: '/dictionaries/money-categories', label: 'Категории денег' },
     ],
   },
+  {
+    title: 'Учёт',
+    items: [
+      { to: '/feed', label: 'Склад корма' },
+    ],
+  },
 ]
 
 export default function Layout() {

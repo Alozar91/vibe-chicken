@@ -11,7 +11,7 @@ from app.core.config import ensure_secret_key, settings
 from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models.user import User
-from app.routers import auth, dictionaries, health
+from app.routers import auth, dictionaries, feed, health
 
 
 @asynccontextmanager
@@ -50,3 +50,4 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(dictionaries.router)
+app.include_router(feed.router)

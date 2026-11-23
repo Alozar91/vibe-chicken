@@ -7,6 +7,7 @@ import MoneyCategoriesPage from './pages/dictionaries/MoneyCategoriesPage'
 import VendorsPage from './pages/dictionaries/VendorsPage'
 import PlacesPage from './pages/dictionaries/PlacesPage'
 import FeedDictsPage from './pages/dictionaries/FeedDictsPage'
+import FeedPage from './pages/feed/FeedPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/dictionaries/buyers" element={<BuyersPage />} />
           <Route path="/dictionaries/feed" element={<FeedDictsPage />} />
           <Route path="/dictionaries/money-categories" element={<MoneyCategoriesPage />} />
+          <Route path="/feed" element={<FeedPage />} />
         </Route>
       </Routes>
     </AuthProvider>

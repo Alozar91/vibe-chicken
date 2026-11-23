@@ -20,6 +20,7 @@ class FeedPurchase(Base):
     vendor_id: Mapped[int] = mapped_column(ForeignKey("vendors.id"))
     kg: Mapped[float] = mapped_column(Numeric(10, 3))
     total_cost: Mapped[float] = mapped_column(Numeric(12, 2))
+    comment: Mapped[str | None] = mapped_column(String(500), default=None)
 
 
 class FeedAdjustment(Base):
