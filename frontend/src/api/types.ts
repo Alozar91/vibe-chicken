@@ -219,3 +219,63 @@ export interface BatchSale {
   buyer_id: number | null
   total_amount: number
 }
+
+// --- Несушки и яйцо ---
+
+export interface LayFlock {
+  id: number
+  name: string
+  place_id: number
+  start_date: string
+  status: 'active' | 'closed'
+}
+
+export interface LayFlockChange {
+  id: number
+  flock_id: number
+  date: string
+  head_delta: number
+  reason: string | null
+}
+
+export interface EggCollection {
+  id: number
+  flock_id: number
+  date: string
+  pieces: number
+}
+
+export interface EggSale {
+  id: number
+  date: string
+  dozens: number
+  price_per_ten: number
+  buyer_id: number | null
+  total_amount: number
+}
+
+export interface EggSelfUse {
+  id: number
+  flock_id: number
+  date: string
+  pieces: number
+}
+
+export interface LayFeeding {
+  id: number
+  flock_id: number
+  date: string
+  feed_category_id: number
+  feed_brand_id: number
+  kg: number
+}
+
+export interface FlockMetrics {
+  current_head: number
+  eggs_total: number
+  dozens_sold: number
+  egg_revenue: number
+  selfuse_total: number
+  feed_kg: number
+  lay_rate_pct: number | null
+}

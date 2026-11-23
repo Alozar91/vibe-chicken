@@ -15,6 +15,7 @@ from app.routers import auth, broiler, dictionaries, feed, health
 from app.routers import settings as settings_router
 from app.routers import money as money_router
 from app.routers import backup as backup_router
+from app.routers import layers as layers_router
 from app.services import backup as backup_svc
 
 
@@ -60,3 +61,5 @@ app.include_router(broiler.router)
 app.include_router(settings_router.router)
 app.include_router(money_router.router)
 app.include_router(backup_router.router)
+app.include_router(layers_router.router)
+app.include_router(layers_router.sales_router)
