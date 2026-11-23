@@ -21,11 +21,13 @@ export function Modal({
   title,
   onClose,
   children,
+  wide = false,
 }: {
   open: boolean
   title: string
   onClose: () => void
   children: ReactNode
+  wide?: boolean
 }) {
   if (!open) return null
   return (
@@ -34,7 +36,7 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className={`w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} rounded-2xl bg-white p-5 shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -207,6 +209,32 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean; onCha
         className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400"
       />
       {label}
+    </label>
+  )
+}
+
+/** Чекбокс-строка с подписью и необязательной подсказкой (справа). */
+export function CheckboxRow({
+  checked,
+  onChange,
+  label,
+  hint,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  label: string
+  hint?: string
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm text-slate-700">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 shrink-0 accent-amber-500"
+      />
+      <span className="min-w-0 flex-1">{label}</span>
+      {hint && <span className="text-xs text-amber-600">{hint}</span>}
     </label>
   )
 }

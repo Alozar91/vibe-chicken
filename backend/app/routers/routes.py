@@ -22,13 +22,13 @@ def _handle(fn, *args, **kwargs):
 
 
 @router.get("/preview", response_model=PreviewOut)
-def preview_route(order_ids: str = Query(description="id заказов через запятую")):
+def preview_route(order_ids: str = Query(description="id заказов через запятую"), db: Session = Depends(get_db)):
     """Автопорядок объезда для выбранных заказов (ферма — старт)."""
     try:
         ids = [int(x) for x in order_ids.split(",") if x.strip()]
     except ValueError:
         raise HTTPException(status_code=400, detail="order_ids — числа через запятую") from None
-    return _handle(svc.preview, ids)
+    return _handle(svc.preview, db, ids)
 
 
 @router.post("", response_model=RouteOut, status_code=201)

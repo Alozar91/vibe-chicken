@@ -28,16 +28,19 @@ SETTING_DEFS: dict[str, dict] = {
     "farm_address": {
         "default": "",
         "label": "Адрес хозяйства",
+        "hint": "Стартовая точка маршрутов доставки",
         "hidden": True,
     },
     "farm_lat": {
         "default": "",
         "label": "Широта хозяйства",
+        "hint": "Определяется по адресу или вводится вручную",
         "hidden": True,
     },
     "farm_lon": {
         "default": "",
         "label": "Долгота хозяйства",
+        "hint": "Определяется по адресу или вводится вручную",
         "hidden": True,
     },
 }

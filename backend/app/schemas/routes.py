@@ -53,6 +53,9 @@ class RouteOut(BaseModel):
 class RouteDetailOut(RouteOut):
     """Маршрут с пересчитанными временами переездов."""
 
+    farm_label: str = ""
+    farm_lat: float | None = None
+    farm_lon: float | None = None
     approximate: bool = False
     total_seconds: float = 0.0
     total_meters: float = 0.0
