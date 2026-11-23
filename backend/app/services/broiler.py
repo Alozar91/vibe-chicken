@@ -32,6 +32,7 @@ from app.schemas.broiler import (
     TreatmentIn,
     WeighingIn,
 )
+from app.services import settings as settings_svc
 
 # константы — русский текст для вывода «нет данных» решает UI; тут только None
 
@@ -276,17 +277,28 @@ def create_slaughter(db: Session, batch_id: int, data: SlaughterIn) -> dict:
             f"Нельзя забить {data.head_count} гол.: в партии осталось {metrics.current_head}"
         )
 
+    # Живой вес считается из выхода продукции через коэффициент (настройка системы):
+    # живой вес = Σкг продукции / коэффициент выхода (концепция §4.1, пересчёт)
+    output_kg = sum(o.kg for o in data.outputs)
+    ratio = settings_svc.get_float(db, "output_ratio_tushka")
+    if ratio <= 0:
+        raise ValueError("Коэффициент выхода в настройках должен быть больше 0")
+    live_weight = round(output_kg / ratio, 3)
+
     obj = BatchSlaughter(
         batch_id=batch_id, date=data.date, head_count=data.head_count,
-        live_weight_kg=data.live_weight_kg,
+        live_weight_kg=live_weight,
     )
     db.add(obj)
     db.flush()
     for o in data.outputs:
         db.add(SlaughterOutput(slaughter_id=obj.id, **o.model_dump()))
     db.commit()
-    return {"id": obj.id, "batch_id": batch_id, "date": obj.date,
-            "head_count": obj.head_count, "live_weight_kg": float(obj.live_weight_kg)}
+    return {
+        "id": obj.id, "batch_id": batch_id, "date": obj.date,
+        "head_count": obj.head_count, "live_weight_kg": float(obj.live_weight_kg),
+        "output_kg": round(output_kg, 3), "output_ratio": ratio,
+    }
 
 
 def delete_slaughter(db: Session, batch_id: int, obj_id: int) -> None:

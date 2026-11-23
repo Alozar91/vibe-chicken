@@ -10,6 +10,7 @@ import FeedDictsPage from './pages/dictionaries/FeedDictsPage'
 import FeedPage from './pages/feed/FeedPage'
 import BatchesPage from './pages/broiler/BatchesPage'
 import BatchDetailPage from './pages/broiler/BatchDetailPage'
+import SettingsPage from './pages/SettingsPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/batches" element={<BatchesPage />} />
           <Route path="/batches/:id" element={<BatchDetailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </AuthProvider>

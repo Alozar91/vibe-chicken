@@ -179,6 +179,14 @@ export interface Slaughter {
   outputs: SlaughterOutput[]
 }
 
+export interface AppSetting {
+  key: string
+  value: string
+  default: string
+  label: string
+  hint: string
+}
+
 export interface BatchSale {
   id: number
   batch_id: number
