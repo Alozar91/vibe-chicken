@@ -1,6 +1,6 @@
 # Модель данных (черновик v0.1)
 
-> Следует из `concept.md` v1.1. Событийный принцип: итоги считаются запросами.
+> Следует из `concept.md` v1.3. Событийный принцип: итоги считаются запросами.
 > Все таблицы имеют `id` (PK) и, где уместно, `created_at`.
 > **Аудит:** все событийные таблицы (события партий, яйцо, корм, деньги) дополнительно
 > содержат `created_by` → `users.id` — кто внёс запись.
@@ -18,7 +18,8 @@
 | `places` | name, kind (`broiler_module` / `lay_house`), note | Места содержания: 2 бройлерных модуля + курятник несушек |
 | `feed_categories` | name | Категории корма: старт, рост, финиш, несушка + свои |
 | `feed_brands` | name | Производители корма (для сравнения конверсии) |
-| `vendors` | name, note | Продавцы/контрагенты: цыплята, корм и другие закупки |
+| `vendors` | name, note, types (JSON, необязательно: цыплята/корм/лекарства/прочее — можно несколько) | Продавцы. Теги упорядочивают подсказки, не ограничивают выбор |
+| `buyers` | name, phone, address | Покупатели продукции: бройлер, яйцо |
 | `money_categories` | name, kind (`income` / `expense`) | Категории журнала денег |
 
 ## Бройлеры
@@ -31,7 +32,7 @@
 | `batch_weighings` | batch_id, date, head_count, avg_weight_kg | Опционально |
 | `batch_treatments` | batch_id, date, description, cost | Лечение/обработки |
 | `batch_slaughters` | batch_id, date, head_count, live_weight_kg, product_weight_kg | Забой+разделка; допускается несколько записей (частичный забой) |
-| `batch_sales` | batch_id, date, product_kg, price_per_kg, buyer, total_amount | Реализация по весу |
+| `batch_sales` | batch_id, date, product_kg, price_per_kg, buyer_id → buyers (nullable), total_amount | Реализация по весу |
 
 ## Несушки и яйцо
 
@@ -41,7 +42,7 @@
 | `lay_flock_changes` | flock_id, date, head_delta (+/−), reason | Пополнение/выбраковка; текущее поголовье = сумма дельт |
 | `egg_collections` | flock_id, date, pieces | Ежедневный сбор |
 | `egg_selfuse` | flock_id, date, pieces | Расход «для себя» |
-| `egg_sales` | date, dozens, price_per_ten, total_amount | Продажа десятками |
+| `egg_sales` | date, dozens, price_per_ten, buyer_id → buyers (nullable), total_amount | Продажа десятками |
 
 Остаток яйца = Σсборов − Σсамопотребление − Σпродаж×10.
 
