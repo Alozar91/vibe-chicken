@@ -10,6 +10,14 @@ import { createRoute, deleteRoute, getRoute, listRoutes, previewRoute, updateRou
 import type { Order, PreviewOut, RouteDetail, RouteSummary } from '../../api/types'
 import { Button, Card, CheckboxRow, ErrorBox, Modal, Page, TextInput } from '../../components/ui'
 
+/** Дата в формате YYYY-MM-DD по местному времени (toISOString даёт UTC — к вечеру врёт на день). */
+function localDate(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 /** 5400 → «1 ч 30 мин»; 355 → «6 мин». */
 function fmtDur(seconds: number): string {
   const m = Math.round(seconds / 60)
@@ -164,10 +172,8 @@ function RouteEditor({
 }) {
   const [selected, setSelected] = useState<Set<number>>(new Set(preselectedIds ?? []))
   // фильтр по дате заказа: по умолчанию последний месяц, старьё не тянем
-  const [dateFrom, setDateFrom] = useState(
-    new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
-  )
-  const [dateTo, setDateTo] = useState('')
+  const [dateFrom, setDateFrom] = useState(localDate(new Date(Date.now() - 30 * 86400000)))
+  const [dateTo, setDateTo] = useState(localDate(new Date()))
   const [preview, setPreview] = useState<PreviewOut | null>(null)
   const [detail, setDetail] = useState<RouteDetail | null>(null)
   const [name, setName] = useState('')
