@@ -27,6 +27,7 @@ from app.models import (
 from app.schemas.layers import EggSaleIn
 from app.schemas.orders import (
     OrderDetailOut,
+    OrderFulfillmentOut,
     OrderProductSaleIn,
     OrderIn,
     OrderMetrics,
@@ -184,13 +185,37 @@ def _metrics(db: Session, order: Order) -> list[OrderMetrics]:
 
 
 def _to_detail(db: Session, order: Order) -> OrderDetailOut:
-    fulfillments = list(
+    rows = list(
         db.scalars(
             select(OrderFulfillment)
             .where(OrderFulfillment.order_id == order.id)
             .order_by(OrderFulfillment.id)
         )
     )
+    fulfillments: list[OrderFulfillmentOut] = []
+    for f in rows:
+        # дата/цена/сумма берём из самой продажи (яйцо или продукция партии)
+        if f.sale_kind == "egg_sale":
+            sale = db.get(EggSale, f.egg_sale_id)
+        else:
+            sale = db.get(BatchSale, f.batch_sale_id)
+        if sale is None:  # продажа удалена в обход API — связь не показываем
+            continue
+        fulfillments.append(
+            OrderFulfillmentOut(
+                id=f.id,
+                item_id=f.item_id,
+                sale_kind=f.sale_kind,
+                egg_sale_id=f.egg_sale_id,
+                batch_sale_id=f.batch_sale_id,
+                actual_qty=f.actual_qty,
+                unit=f.unit,
+                created_at=f.created_at,
+                sale_date=sale.date,
+                price=float(sale.price_per_ten if f.sale_kind == "egg_sale" else sale.price_per_kg),
+                amount=float(sale.total_amount),
+            )
+        )
     return OrderDetailOut(
         id=order.id,
         date=order.date,

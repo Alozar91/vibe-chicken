@@ -378,6 +378,10 @@ export interface OrderFulfillment {
   actual_qty: number
   unit: string
   created_at: string
+  /** данные связанной продажи (яйцо или продукция партии) */
+  sale_date: string
+  price: number
+  amount: number
 }
 
 export interface OrderDetail extends Order {
