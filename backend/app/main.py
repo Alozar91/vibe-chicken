@@ -14,11 +14,13 @@ from app.models.user import User
 from app.routers import auth, broiler, dictionaries, feed, health
 from app.routers import settings as settings_router
 from app.routers import money as money_router
+from app.routers import backup as backup_router
+from app.services import backup as backup_svc
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """При первом запуске создаёт администратора из настроек."""
+    """При первом запуске создаёт администратора; стартует ночной бэкап."""
     with SessionLocal() as db:
         has_users = db.scalar(select(User.id).limit(1)) is not None
         if not has_users:
@@ -29,6 +31,7 @@ async def lifespan(_: FastAPI):
                 )
             )
             db.commit()
+    backup_svc.start_backup_scheduler(settings.db_url)
     yield
 
 
@@ -56,3 +59,4 @@ app.include_router(feed.router)
 app.include_router(broiler.router)
 app.include_router(settings_router.router)
 app.include_router(money_router.router)
+app.include_router(backup_router.router)

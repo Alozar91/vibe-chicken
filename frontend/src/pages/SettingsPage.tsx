@@ -1,8 +1,10 @@
-/** Страница «Настройки»: коэффициенты расчётов (key-value из бэкенда). */
+/** Страница «Настройки»: коэффициенты расчётов + резервные копии. */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { listSettings, updateSetting } from '../api/settings'
+import { createBackup, listBackups } from '../api/backups'
 import type { AppSetting } from '../api/types'
+import type { BackupInfo } from '../api/backups'
 import { Button, Card, ErrorBox, Page, TextInput } from '../components/ui'
 
 export default function SettingsPage() {
@@ -11,6 +13,32 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [savedKey, setSavedKey] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [backups, setBackups] = useState<BackupInfo[]>([])
+  const [backupBusy, setBackupBusy] = useState(false)
+
+  const loadBackups = useCallback(async () => {
+    try {
+      setBackups(await listBackups())
+    } catch {
+      /* бэкапы — не критично для страницы настроек */
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadBackups()
+  }, [loadBackups])
+
+  const doBackup = async () => {
+    setBackupBusy(true)
+    try {
+      await createBackup()
+      await loadBackups()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка бэкапа')
+    } finally {
+      setBackupBusy(false)
+    }
+  }
 
   useEffect(() => {
     void listSettings()
@@ -67,6 +95,32 @@ export default function SettingsPage() {
           ))}
           {items.length === 0 && !error && (
             <p className="text-sm text-slate-400">Настроек пока нет</p>
+          )}
+        </div>
+      </Card>
+
+      <Card className="mt-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h3 className="font-semibold text-slate-900">Резервные копии</h3>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Каждую ночь в 03:00 копия создаётся автоматически; хранятся последние 14.
+              Файлы: backend/data/backups/.
+            </p>
+          </div>
+          <Button onClick={() => void doBackup()} disabled={backupBusy}>
+            {backupBusy ? 'Копирую…' : 'Сделать копию'}
+          </Button>
+        </div>
+        <div className="mt-3 space-y-1">
+          {backups.map((b) => (
+            <div key={b.name} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+              <span className="font-mono text-xs text-slate-600">{b.name}</span>
+              <span className="text-xs text-slate-400">{b.size_kb} КБ</span>
+            </div>
+          ))}
+          {backups.length === 0 && (
+            <p className="text-sm text-slate-400">Копий пока нет — сделайте первую</p>
           )}
         </div>
       </Card>
