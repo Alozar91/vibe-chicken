@@ -163,6 +163,11 @@ function RouteEditor({
   onSaved: () => Promise<void>
 }) {
   const [selected, setSelected] = useState<Set<number>>(new Set(preselectedIds ?? []))
+  // фильтр по дате заказа: по умолчанию последний месяц, старьё не тянем
+  const [dateFrom, setDateFrom] = useState(
+    new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
+  )
+  const [dateTo, setDateTo] = useState('')
   const [preview, setPreview] = useState<PreviewOut | null>(null)
   const [detail, setDetail] = useState<RouteDetail | null>(null)
   const [name, setName] = useState('')
@@ -252,9 +257,50 @@ function RouteEditor({
       {editingId === null && !preview && (
         <div>
           <p className="text-sm text-slate-500">Выберите заказы для развоза:</p>
+          <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+            <span>Дата с</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            />
+            <span>по</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setDateFrom('')
+                setDateTo('')
+              }}
+              className="text-xs text-amber-600 hover:underline"
+            >
+              показать все
+            </button>
+          </div>
           <div className="mt-2 max-h-72 space-y-1 overflow-y-auto rounded-xl bg-slate-50 p-2">
-            {orders.length === 0 && <p className="text-sm text-slate-400">Новых заказов нет</p>}
-            {orders.map((o) => (
+            {orders.length === 0 && <p className="text-sm text-slate-400">Заказов нет</p>}
+            {(() => {
+              const visible = orders.filter((o) => {
+                if (dateFrom && o.date < dateFrom) return false
+                if (dateTo && o.date > dateTo) return false
+                return true
+              })
+              const hidden = orders.length - visible.length
+              return (
+                <>
+                  {visible.length === 0 && <p className="text-sm text-slate-400">За период заказов нет</p>}
+                  {hidden > 0 && (
+                    <p className="px-2 pb-1 text-xs text-slate-400">
+                      Скрыто старых заказов: {hidden} (кнопка «показать все»)
+                    </p>
+                  )}
+                  {visible.map((o) => (
               <div key={o.id}>
                 <CheckboxRow
                   label={`${o.buyer.name} · ${new Date(o.date).toLocaleDateString('ru-RU')}`}
@@ -266,7 +312,10 @@ function RouteEditor({
                   <span className="ml-6 text-xs text-slate-400">уже выполнен (продажи оформлены)</span>
                 )}
               </div>
-            ))}
+                  ))}
+                </>
+              )
+            })()}
           </div>
           <div className="mt-3">
             <Button onClick={() => void build()} disabled={busy || selected.size === 0}>
