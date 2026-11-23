@@ -46,6 +46,11 @@ def create_batch(data: BatchIn, db: Session = Depends(get_db)):
     return _handle(svc.create_batch, db, data)
 
 
+@router.get("/{batch_id}", response_model=BatchOut)
+def get_batch(batch_id: int, db: Session = Depends(get_db)):
+    return _handle(svc.get_batch, db, batch_id)
+
+
 @router.put("/{batch_id}", response_model=BatchOut)
 def update_batch(batch_id: int, data: BatchIn, db: Session = Depends(get_db)):
     return _handle(svc.update_batch, db, batch_id, data)
