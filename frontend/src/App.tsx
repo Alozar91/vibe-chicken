@@ -1,6 +1,11 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import Layout from './components/layout/Layout'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import BuyersPage from './pages/dictionaries/BuyersPage'
+import DictionariesPage from './pages/dictionaries/DictionariesPage'
+import MoneyCategoriesPage from './pages/dictionaries/MoneyCategoriesPage'
+import VendorsPage from './pages/dictionaries/VendorsPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 
@@ -24,13 +29,18 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route
-          path="/"
           element={
             <RequireAuth>
-              <DashboardPage />
+              <Layout />
             </RequireAuth>
           }
-        />
+        >
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/dictionaries" element={<DictionariesPage />} />
+          <Route path="/dictionaries/vendors" element={<VendorsPage />} />
+          <Route path="/dictionaries/buyers" element={<BuyersPage />} />
+          <Route path="/dictionaries/money-categories" element={<MoneyCategoriesPage />} />
+        </Route>
       </Routes>
     </AuthProvider>
   )
