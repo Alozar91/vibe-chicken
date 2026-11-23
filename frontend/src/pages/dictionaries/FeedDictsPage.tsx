@@ -1,5 +1,6 @@
 /** Страница «Корм и продукция»: категории, производители, виды продукции. */
 
+import { useRef } from 'react'
 import {
   createFeedBrand,
   createFeedCategory,
@@ -32,12 +33,18 @@ export default function FeedDictsPage() {
     (id, name) => updateFeedBrand(id, name),
     deleteFeedBrand,
   )
-  const productTypes = useCrud<ProductType, string>(
+  const productTypes = useCrud<ProductType, { name: string; unit: string }>(
     listProductTypes,
-    (name) => createProductType(name),
-    (id, name) => updateProductType(id, name),
+    (data) => createProductType(data.name, data.unit),
+    (id, data) => updateProductType(id, data.name, data.unit),
     deleteProductType,
   )
+  // unit в модалке видов продукции: значение выбирается в formExtra,
+  // а подхватывается в toInput/toEditInput через ref
+  const unitRef = useRef('kg')
+  const setUnitRef = (v: string) => {
+    unitRef.current = v
+  }
 
   return (
     <Page title="Корм и продукция">
@@ -68,6 +75,14 @@ export default function FeedDictsPage() {
           onUpdate={productTypes.doUpdate}
           onRemove={productTypes.doRemove}
           namePlaceholder="Тушка"
+          toInput={(name) => ({ name, unit: unitRef.current })}
+          toEditInput={(_item, name) => ({ name, unit: unitRef.current })}
+          renderExtra={(item) => (
+            <span className="text-xs text-slate-400">{item.unit === 'pieces' ? 'шт' : 'кг'}</span>
+          )}
+          formExtra={(_, editing) => (
+            <UnitSelect value={editing ? editing.unit : unitRef.current} onChange={setUnitRef} />
+          )}
         />
       </div>
       <p className="mt-3 text-xs text-slate-400">
@@ -75,5 +90,24 @@ export default function FeedDictsPage() {
         для выхода после забоя.
       </p>
     </Page>
+  )
+}
+
+
+
+/** Селект единицы вида продукции: шт (тушка) или кг (остальное). */
+function UnitSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="block text-sm">
+      <span className="mb-1 block text-slate-500">Единица продажи</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none"
+      >
+        <option value="kg">кг (на вес)</option>
+        <option value="pieces">шт (поштучно, тушка)</option>
+      </select>
+    </label>
   )
 }

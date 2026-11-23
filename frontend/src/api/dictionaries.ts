@@ -62,10 +62,13 @@ export const deleteBuyer = (id: number) =>
 
 // --- Виды продукции ---
 export const listProductTypes = () => api<ProductType[]>('/api/dictionaries/product-types')
-export const createProductType = (name: string) =>
-  api<ProductType>('/api/dictionaries/product-types', { method: 'POST', body: JSON.stringify({ name }) })
-export const updateProductType = (id: number, name: string) =>
-  api<ProductType>(`/api/dictionaries/product-types/${id}`, { method: 'PUT', body: JSON.stringify({ name }) })
+export const createProductType = (name: string, unit: string) =>
+  api<ProductType>('/api/dictionaries/product-types', { method: 'POST', body: JSON.stringify({ name, unit }) })
+export const updateProductType = (id: number, name: string, unit: string) =>
+  api<ProductType>(`/api/dictionaries/product-types/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name, unit }),
+  })
 export const deleteProductType = (id: number) =>
   api<void>(`/api/dictionaries/product-types/${id}`, { method: 'DELETE' })
 
