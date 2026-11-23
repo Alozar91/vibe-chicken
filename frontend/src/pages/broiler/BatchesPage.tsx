@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   createBatch,
+  updateBatch,
   listBatches,
   closeBatch,
 } from '../../api/broiler'
@@ -23,6 +24,7 @@ export default function BatchesPage() {
   const [loading, setLoading] = useState(true)
 
   const [modalOpen, setModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [code, setCode] = useState(`B-${today().slice(0, 7).replace('-', '')}-`)
   const [placeId, setPlaceId] = useState('')
   const [startDate, setStartDate] = useState(today())
@@ -59,7 +61,22 @@ export default function BatchesPage() {
   const placeName = (id: number) => places.find((p) => p.id === id)?.name ?? `#${id}`
   const vendorName = (id: number) => chicksVendors.find((v) => v.id === id)?.name ?? `#${id}`
 
+  const openEdit = (b: BroilerBatch) => {
+    setEditingId(b.id)
+    setCode(b.code)
+    setPlaceId(String(b.place_id))
+    setStartDate(b.start_date)
+    setHeadCount(String(b.head_count))
+    setCross(b.cross ?? '')
+    setVendorId(String(b.vendor_id))
+    setPricePerHead(String(b.chick_price_per_head))
+    setAvgWeight(b.chick_avg_weight_kg ? String(Math.round(b.chick_avg_weight_kg * 1000)) : '')
+    setFormError(null)
+    setModalOpen(true)
+  }
+
   const openCreate = () => {
+    setEditingId(null)
     setCode(`B-${today().slice(0, 7).replace('-', '')}-`)
     setPlaceId(places[0]?.id.toString() ?? '')
     setStartDate(today())
@@ -76,16 +93,21 @@ export default function BatchesPage() {
     setBusy(true)
     setFormError(null)
     try {
-      await createBatch({
+      const payload = {
         code: code.trim(),
         place_id: Number(placeId),
         start_date: startDate,
         head_count: Number(headCount),
         cross: cross.trim() || null,
         vendor_id: Number(vendorId),
-        chick_price_per_head: Number(pricePerHead),
+        chick_price_per_head: Number(pricePerHead.replace(",", ".")),
         chick_avg_weight_kg: avgWeight.trim() ? Number(avgWeight.replace(",", ".")) / 1000 : null,
-      })
+      }
+      if (editingId !== null) {
+        await updateBatch(editingId, payload)
+      } else {
+        await createBatch(payload)
+      }
       setModalOpen(false)
       await refresh()
     } catch (e) {
@@ -159,6 +181,12 @@ export default function BatchesPage() {
               >
                 Открыть
               </Link>
+              <button
+                onClick={() => openEdit(b)}
+                className="rounded-lg border border-amber-400 px-3 py-1.5 text-sm text-amber-600 hover:bg-amber-50"
+              >
+                Изменить
+              </button>
               {b.status === 'active' && (
                 <Button kind="secondary" onClick={() => doClose(b.id)} disabled={busy}>
                   Закрыть партию
@@ -169,7 +197,7 @@ export default function BatchesPage() {
         ))}
       </div>
 
-      <Modal open={modalOpen} title="Новая партия" onClose={() => setModalOpen(false)}>
+      <Modal open={modalOpen} title={editingId !== null ? 'Изменить партию' : 'Новая партия'} onClose={() => { setModalOpen(false); setEditingId(null) }}>
         <ErrorBox message={formError} />
         <form
           onSubmit={(e) => {
@@ -207,12 +235,13 @@ export default function BatchesPage() {
           <p className="text-xs text-slate-400">
             Вес цыплёнка в граммах (например 42); позволяет считать конверсию корма (FCR) сразу;
             без него FCR появится после двух контрольных взвешиваний.
+            {editingId !== null && ' При изменении цены/голов запись закупки в журнале денег обновится автоматически.'}
           </p>
           <div className="flex gap-2 pt-1">
             <Button type="submit" disabled={busy || !placeId || !vendorId}>
               Сохранить
             </Button>
-            <Button kind="secondary" onClick={() => setModalOpen(false)}>
+            <Button kind="secondary" onClick={() => { setModalOpen(false); setEditingId(null) }}>
               Отмена
             </Button>
           </div>

@@ -15,6 +15,8 @@ import type {
 export const listBatches = () => api<BroilerBatch[]>('/api/batches')
 export const createBatch = (data: Omit<BroilerBatch, 'id' | 'status' | 'closed_at'>) =>
   api<BroilerBatch>('/api/batches', { method: 'POST', body: JSON.stringify(data) })
+export const updateBatch = (id: number, data: unknown) =>
+  api<BroilerBatch>(`/api/batches/${id}`, { method: 'PUT', body: JSON.stringify(data) })
 export const closeBatch = (id: number) =>
   api<BroilerBatch>(`/api/batches/${id}/close`, { method: 'POST' })
 export const batchMetrics = (id: number) => api<BatchMetrics>(`/api/batches/${id}/metrics`)

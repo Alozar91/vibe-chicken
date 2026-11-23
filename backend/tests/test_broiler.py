@@ -4,6 +4,7 @@ from datetime import date
 
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
 import app.models  # noqa: F401
@@ -240,3 +241,36 @@ def test_update_sale_date_before_slaughter_blocked(db, env):
         svc.update_sale(db, batch.id, sale.id, SaleIn(date=date(2025, 5, 1),
                                                       product_type_id=env["ptype_id"],
                                                       product_kg=10, price_per_kg=300))
+
+
+# --- Редактирование партии ---
+
+
+def test_update_batch_price_updates_money_tx(db, env):
+    batch = svc.create_batch(db, _batch_in(env))  # 50 гол × 100 = 5000
+    upd = svc.update_batch(db, batch.id, _batch_in(env, chick_price_per_head=60))
+    assert upd.chick_price_per_head == 60.0
+    tx = db.scalar(select(MoneyTransaction).where(MoneyTransaction.batch_id == batch.id))
+    assert tx.amount == 3000.0  # 50 гол × 60
+
+
+def test_update_batch_head_count_below_lost_blocked(db, env):
+    batch = svc.create_batch(db, _batch_in(env))
+    svc.create_mortality(db, batch.id, MortalityIn(date=D, head_count=10))
+    with pytest.raises(ValueError, match="выбывших"):
+        svc.update_batch(db, batch.id, _batch_in(env, head_count=5))
+
+
+def test_update_batch_start_date_after_event_blocked(db, env):
+    batch = svc.create_batch(db, _batch_in(env))
+    svc.create_feeding(db, batch.id, FeedingIn(date=date(2025, 6, 10), feed_category_id=env["cat_id"],
+                                               feed_brand_id=env["brand_id"], kg=10))
+    with pytest.raises(ValueError, match="позже первого события"):
+        svc.update_batch(db, batch.id, _batch_in(env, start_date=date(2025, 6, 20)))
+
+
+def test_update_batch_duplicate_code_blocked(db, env):
+    b1 = svc.create_batch(db, _batch_in(env))
+    b2 = svc.create_batch(db, _batch_in(env, code="B-2"))
+    with pytest.raises(ValueError, match="уже есть"):
+        svc.update_batch(db, b2.id, _batch_in(env, code=b1.code))
