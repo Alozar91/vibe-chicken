@@ -38,9 +38,10 @@ class BatchMetrics(BaseModel):
     live_weight_kg: float  # Σ предубойного живого веса
     output_kg: float  # Σ продукции по всем видам
     output_pct: float | None  # выход продукции от живого веса
-    direct_costs: float  # цыплята + корм (доля) + лечение
+    direct_costs: float  # цыплята + лечение + привязанные общие
+    shared_costs: float = 0.0  # доля общих расходов по кура-дням (§4.4)
     revenue: float  # Σ продаж
-    profit: float | None  # выручка − прямые затраты (общие — позже)
+    profit: float | None  # выручка − прямые − доля общих
 
 
 class MortalityIn(BaseModel):

@@ -79,3 +79,5 @@ class MoneyCategory(Base):
     name: Mapped[str] = mapped_column(String(100))
     kind: Mapped[str] = mapped_column(String(10))  # income | expense
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # общая категория: нераспределённые расходы в ней делятся по кура-дням (§4.4)
+    is_general: Mapped[bool] = mapped_column(default=False)

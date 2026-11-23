@@ -1,6 +1,6 @@
 """Тесты партий бройлеров: теги, даты, забой, продажи, метрики."""
 
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from sqlalchemy import create_engine
@@ -30,6 +30,7 @@ from app.schemas.broiler import (
 )
 from app.schemas.dictionaries import VendorIn
 from app.services import broiler as svc
+from app.services import money
 from app.services import dictionaries as dict_svc
 
 D = date(2025, 6, 1)
@@ -274,3 +275,104 @@ def test_update_batch_duplicate_code_blocked(db, env):
     b2 = svc.create_batch(db, _batch_in(env, code="B-2"))
     with pytest.raises(ValueError, match="уже есть"):
         svc.update_batch(db, b2.id, _batch_in(env, code=b1.code))
+
+
+# --- Журнал денег: авто-записи и распределение общих расходов ---
+
+
+def _setup_money_cats(db):
+    """Категории: лечение, продажа (доход), электричество (общая)."""
+    treat = MoneyCategory(name="Лечение", kind="expense")
+    sale_cat = MoneyCategory(name="Продажа продукции", kind="income")
+    el = MoneyCategory(name="Электричество", kind="expense", is_general=True)
+    db.add_all([treat, sale_cat, el])
+    db.commit()
+    return treat.id, sale_cat.id, el.id
+
+
+def test_auto_transactions_created_and_synced(db, env):
+    _setup_money_cats(db)
+    b = svc.create_batch(db, _batch_in(env))  # 50×100 = 5000
+    tr = svc.create_treatment(db, b.id, TreatmentIn(date=D, description="Вакцина", cost=250.0))
+    svc.create_slaughter(db, b.id, SlaughterIn(
+        date=D, head_count=5, outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=10.0)]))
+    sale = svc.create_sale(db, b.id, SaleIn(
+        date=D, product_type_id=env["ptype_id"], product_kg=10.0,
+        price_per_kg=200.0, buyer_id=env["buyer_id"], total_amount=2000.0))
+
+    txs = list(db.scalars(select(MoneyTransaction)))
+    assert len(txs) == 3
+    chicks = next(t for t in txs if t.source_type == "chicks")
+    treat_tx = next(t for t in txs if t.source_type == "treatment")
+    sale_tx = next(t for t in txs if t.source_type == "sale")
+    assert float(chicks.amount) == 5000.0 and chicks.batch_id == b.id and chicks.is_auto
+    assert float(treat_tx.amount) == 250.0 and treat_tx.batch_id == b.id
+    assert float(sale_tx.amount) == 2000.0
+
+    # правка события → синхронизация записи
+    svc.update_treatment(db, b.id, tr.id, TreatmentIn(date=D, description="Вакцина", cost=300.0))
+    db.expire_all()
+    treat_tx = db.get(MoneyTransaction, treat_tx.id)
+    assert float(treat_tx.amount) == 300.0
+
+    # удаление события → удаление записи
+    svc.delete_sale(db, b.id, sale.id)
+    db.expire_all()
+    assert db.get(MoneyTransaction, sale_tx.id) is None
+
+
+def test_manual_transactions_crud_and_auto_guard(db, env):
+    _setup_money_cats(db)
+    tx = money.create_transaction(
+        db, date_=D, money_category_id=_setup_money_cats(db)[2], amount=1500.0,
+        description="Свет за месяц", batch_id=None)
+    upd = money.update_transaction(
+        db, tx["id"], date_=D, money_category_id=tx["money_category_id"],
+        amount=1800.0, description=None, batch_id=None)
+    assert upd["amount"] == 1800.0
+
+    # авто-запись нельзя менять/удалять вручную
+    b = svc.create_batch(db, _batch_in(env))
+    chicks_tx = db.scalar(select(MoneyTransaction).where(MoneyTransaction.source_type == "chicks"))
+    with pytest.raises(ValueError, match="Автоматическую"):
+        money.update_transaction(
+            db, chicks_tx.id, date_=D, money_category_id=1, amount=1.0,
+            description=None, batch_id=None)
+    with pytest.raises(ValueError, match="Автоматическую"):
+        money.delete_transaction(db, chicks_tx.id)
+
+    money.delete_transaction(db, tx["id"])
+    assert db.get(MoneyTransaction, tx["id"]) is None
+
+
+def test_general_expense_distribution_by_chicken_days(db, env):
+    _setup_money_cats(db)
+    el = db.scalar(select(MoneyCategory).where(MoneyCategory.name == "Электричество"))
+
+    # партия А: 50 гол с D (1 июня); партия Б: 50 гол с 26 июня
+    a = svc.create_batch(db, _batch_in(env, code="B-A"))
+    b = svc.create_batch(db, _batch_in(env, code="B-B", start_date=D + timedelta(days=25)))
+    money.create_transaction(
+        db, date_=D, money_category_id=el.id, amount=620.0,
+        description="Электричество за июнь", batch_id=None)
+
+    today = D + timedelta(days=60)
+    days = money.chicken_days_by_month(db, today=today)
+    assert days["2025-06"] == 50 * 30 + 50 * 5  # А: 30 дней, Б: 5 дней июня
+
+    share_a = money.general_expense_share(db, a, today=today)
+    share_b = money.general_expense_share(db, b, today=today)
+    # 620 ₽ × (1500 / 1750) и (250 / 1750)
+    assert abs(share_a - 620 * 1500 / 1750) < 0.01
+    assert abs(share_b - 620 * 250 / 1750) < 0.01
+
+    # метрики: доля общих попадает в profit
+    svc.create_slaughter(db, a.id, SlaughterIn(
+        date=D + timedelta(days=10), head_count=5,
+        outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=10.0)]))
+    svc.create_sale(db, a.id, SaleIn(
+        date=D + timedelta(days=10), product_type_id=env["ptype_id"], product_kg=10.0,
+        price_per_kg=200.0, buyer_id=env["buyer_id"]))
+    m = svc.compute_metrics(db, a.id)
+    assert m.shared_costs > 0
+    assert abs(m.profit - (m.revenue - m.direct_costs - m.shared_costs)) < 0.01

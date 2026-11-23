@@ -57,3 +57,6 @@ class MoneyTransaction(Base):
     flock_id: Mapped[int | None] = mapped_column(
         ForeignKey("lay_flocks.id"), default=None, index=True
     )
+    is_auto: Mapped[bool] = mapped_column(default=False)  # создана сервисом события
+    source_type: Mapped[str | None] = mapped_column(String(30), default=None)
+    source_id: Mapped[int | None] = mapped_column(default=None, index=True)

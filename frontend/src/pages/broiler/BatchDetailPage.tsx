@@ -58,6 +58,7 @@ export default function BatchDetailPage() {
           {metric('Продукция (по забою)', `${metrics.output_kg} кг`)}
           {metric('Выход', metrics.output_pct !== null ? `${metrics.output_pct} %` : null)}
           {metric('Прямые затраты', `${metrics.direct_costs} ₽`)}
+          {metric('Общие (доля)', metrics.shared_costs > 0 ? `${metrics.shared_costs} ₽` : null)}
           {metric('Выручка', `${metrics.revenue} ₽`)}
           {metric('Прибыль', metrics.profit !== null ? `${metrics.profit} ₽` : null, metrics.profit !== null && metrics.profit < 0)}
         </div>

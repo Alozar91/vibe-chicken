@@ -47,6 +47,27 @@ export interface MoneyCategory {
   name: string
   kind: MoneyKind
   is_active: boolean
+  is_general?: boolean
+}
+
+export interface MoneyTransaction {
+  id: number
+  date: string
+  money_category_id: number
+  category_name: string
+  kind: MoneyKind
+  amount: number
+  description: string | null
+  batch_id: number | null
+  flock_id: number | null
+  is_auto: boolean
+  source_type: string | null
+}
+
+export interface MoneySummary {
+  income: number
+  expense: number
+  balance: number
 }
 
 export const VENDOR_TYPE_LABELS: Record<VendorType, string> = {
@@ -126,6 +147,7 @@ export interface BatchMetrics {
   output_kg: number
   output_pct: number | null
   direct_costs: number
+  shared_costs: number
   revenue: number
   profit: number | null
 }
