@@ -17,14 +17,15 @@
 |---|---|---|
 | `places` | name, kind (`broiler_module` / `lay_house`), note | Места содержания: 2 бройлерных модуля + курятник несушек |
 | `feed_categories` | name | Категории корма: старт, рост, финиш, несушка + свои |
-| `feed_brands` | name | Производители корма |
+| `feed_brands` | name | Производители корма (для сравнения конверсии) |
+| `vendors` | name, note | Продавцы/контрагенты: цыплята, корм и другие закупки |
 | `money_categories` | name, kind (`income` / `expense`) | Категории журнала денег |
 
 ## Бройлеры
 
 | Таблица | Поля | Примечания |
 |---|---|---|
-| `broiler_batches` | code (№ партии), place_id → places, start_date, head_count, cross, supplier, chick_price_per_head, status (`active` / `closed`), closed_at | Паспорт партии. Закупка цыплят автоматически порождает транзакцию денег |
+| `broiler_batches` | code (№ партии), place_id → places, start_date, head_count, cross, vendor_id → vendors, chick_price_per_head, status (`active` / `closed`), closed_at | Паспорт партии. Закупка цыплят автоматически порождает транзакцию денег |
 | `batch_mortalities` | batch_id, date, head_count, cause | Падёж |
 | `batch_feedings` | batch_id, date, feed_category_id, feed_brand_id, kg | Списывает со склада |
 | `batch_weighings` | batch_id, date, head_count, avg_weight_kg | Опционально |
@@ -48,7 +49,7 @@
 
 | Таблица | Поля | Примечания |
 |---|---|---|
-| `feed_purchases` | date, feed_category_id, feed_brand_id, kg, total_cost | Приход на склад; порождает транзакцию денег |
+| `feed_purchases` | date, feed_category_id, feed_brand_id, vendor_id → vendors, kg, total_cost | Приход на склад; порождает транзакцию денег |
 | `feed_adjustments` | date, feed_category_id, feed_brand_id, kg_delta, comment | Инвентаризация (корректировка остатка) |
 
 Остаток корма = Σзакупок − Σрасходов партий + Σкорректировок (в разрезе
