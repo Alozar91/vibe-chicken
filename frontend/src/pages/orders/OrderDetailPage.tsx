@@ -109,9 +109,16 @@ export default function OrderDetailPage() {
                     <td className="py-2 pr-2 text-slate-500">
                       {c.fmt(m.remaining_qty)} {unitLabel(m.unit)}
                     </td>
-                    <td className="py-2 pr-2">{m.pct != null ? `${m.pct}%` : '—'}</td>
+                    <td className="py-2 pr-2">
+                      {m.pct != null && (
+                        <span className={m.pct > 100 ? 'font-medium text-amber-600' : ''}>
+                          {m.pct}%{m.pct > 100 ? ' (сверх плана)' : ''}
+                        </span>
+                      )}
+                      {m.pct == null && '—'}
+                    </td>
                     <td className="py-2 text-right whitespace-nowrap">
-                      {order.status !== 'cancelled' && m.remaining_qty > 0 && (
+                      {order.status !== 'cancelled' && (
                         <Button onClick={() => c.openSale(it.id)}>Оформить продажу</Button>
                       )}
                     </td>

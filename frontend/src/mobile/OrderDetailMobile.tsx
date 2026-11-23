@@ -77,8 +77,12 @@ export default function OrderDetailMobile() {
                 <span className="font-medium text-slate-900">{name}</span>
                 <div className="grow" />
                 {m.pct != null && (
-                  <span className={`text-sm font-medium ${m.pct >= 100 ? 'text-green-600' : 'text-slate-500'}`}>
-                    {m.pct}%
+                  <span
+                    className={`text-sm font-medium ${
+                      m.pct > 100 ? 'text-amber-600' : m.pct >= 100 ? 'text-green-600' : 'text-slate-500'
+                    }`}
+                  >
+                    {m.pct}%{m.pct > 100 ? ' · сверх плана' : ''}
                   </span>
                 )}
               </div>
@@ -87,7 +91,7 @@ export default function OrderDetailMobile() {
                 <span>Продано: {c.fmt(m.fulfilled_qty)}</span>
                 <span className="text-slate-400">осталось {c.fmt(m.remaining_qty)}</span>
               </div>
-              {order.status !== 'cancelled' && m.remaining_qty > 0 && (
+              {order.status !== 'cancelled' && (
                 <Button className="mt-2 w-full" onClick={() => c.openSale(it.id)}>
                   Оформить продажу
                 </Button>

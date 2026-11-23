@@ -63,8 +63,9 @@ class OrderFulfillment(Base):
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), index=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("order_items.id"), index=True)
     sale_kind: Mapped[str] = mapped_column(String(20))  # egg_sale | batch_sale
-    egg_sale_id: Mapped[int | None] = mapped_column(ForeignKey("egg_sales.id"), default=None)
-    batch_sale_id: Mapped[int | None] = mapped_column(ForeignKey("batch_sales.id"), default=None)
+    # UNIQUE: одна продажа может быть привязана максимум к одному заказу (идемпотентность)
+    egg_sale_id: Mapped[int | None] = mapped_column(ForeignKey("egg_sales.id"), unique=True, default=None)
+    batch_sale_id: Mapped[int | None] = mapped_column(ForeignKey("batch_sales.id"), unique=True, default=None)
     actual_qty: Mapped[float] = mapped_column(Numeric(12, 3))
     unit: Mapped[str] = mapped_column(String(10))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None)

@@ -9,6 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import ensure_secret_key, settings
 from app.core.db import SessionLocal
+from app.core.idempotency import IdempotencyMiddleware
 from app.core.security import hash_password
 from app.models.user import User
 from app.routers import auth, broiler, dictionaries, feed, health, users
@@ -42,6 +43,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
+# идемпотентность до CORS/сессий (внутри них): replay проходит через CORS-заголовки
+app.add_middleware(IdempotencyMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=ensure_secret_key(),

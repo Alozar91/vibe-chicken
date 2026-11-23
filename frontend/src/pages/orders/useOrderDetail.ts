@@ -57,6 +57,10 @@ export function useOrderDetail(orderId: number) {
     void load()
   }, [load])
 
+  const saleItemRemaining = saleItem
+    ? (order?.metrics.find((x) => x.item_id === saleItem.id)?.remaining_qty ?? null)
+    : null
+
   const openSale = (itemId: number) => {
     if (!order) return
     const item = order.items.find((it) => it.id === itemId)
@@ -65,7 +69,7 @@ export function useOrderDetail(orderId: number) {
     setSaleItem(item)
     setSDate(today())
     setSError(null)
-    setSDozens(String(m.remaining_qty))
+    setSDozens(m.remaining_qty > 0 ? String(m.remaining_qty) : '')
     setSPriceTen(item.price_per_unit != null ? String(item.price_per_unit) : '')
     setSBatch('')
     setSKg('')
@@ -237,6 +241,7 @@ export function useOrderDetail(orderId: number) {
     setSPiecesAuto,
     sError,
     busy,
+    saleItemRemaining,
     openSale,
     openSaleFirst,
     submitSale,

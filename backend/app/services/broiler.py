@@ -528,7 +528,9 @@ def _sync_sale_money(db: Session, batch_id: int, obj: BatchSale) -> None:
     )
 
 
-def create_sale(db: Session, batch_id: int, data: SaleIn) -> BatchSale:
+def create_sale(db: Session, batch_id: int, data: SaleIn, commit: bool = True) -> BatchSale:
+    """Создать продажу продукции партии. commit=False — когда вызов внутри
+    продажи из заказа (§4.7): коммит делает вызывающий код одним транзактом."""
     batch = _get_batch(db, batch_id)
     if db.get(ProductType, data.product_type_id) is None:
         raise ValueError("Вид продукции не найден")
@@ -556,7 +558,8 @@ def create_sale(db: Session, batch_id: int, data: SaleIn) -> BatchSale:
     db.add(obj)
     db.flush()
     _sync_sale_money(db, batch_id, obj)
-    db.commit()
+    if commit:
+        db.commit()
     return obj
 
 
@@ -588,7 +591,9 @@ def update_sale(db: Session, batch_id: int, obj_id: int, data: SaleIn) -> BatchS
     return obj
 
 
-def delete_sale(db: Session, batch_id: int, obj_id: int) -> None:
+def delete_sale(db: Session, batch_id: int, obj_id: int, commit: bool = True) -> None:
+    """Удалить продажу вместе с авто-записью денег. commit=False — из
+    delete_fulfillment (§4.7): удаление связи и продажи — один транзакт."""
     _get_batch(db, batch_id)
     obj = db.get(BatchSale, obj_id)
     if obj is None or obj.batch_id != batch_id:
@@ -598,7 +603,8 @@ def delete_sale(db: Session, batch_id: int, obj_id: int) -> None:
         date_=obj.date, category=None, amount=0, description=None, batch_id=batch_id,
     )
     db.delete(obj)
-    db.commit()
+    if commit:
+        db.commit()
 
 
 # --- Метрики (все — запросами, стандарты §2.4) ---

@@ -36,6 +36,7 @@ from app.models.orders import (  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.routes import DeliveryRoute, RouteStop, RouteStopOrder  # noqa: F401
 from app.models.settings import AppSetting  # noqa: F401
+from app.models.idempotency import IdempotencyKey  # noqa: F401
 from app.models.warehouse import (  # noqa: F401
     FeedAdjustment,
     FeedPurchase,

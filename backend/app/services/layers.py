@@ -321,7 +321,10 @@ def list_sales(db: Session) -> list[EggSale]:
     return list(db.scalars(select(EggSale).order_by(EggSale.date.desc(), EggSale.id.desc())))
 
 
-def create_sale(db: Session, data: EggSaleIn) -> EggSale:
+def create_sale(db: Session, data: EggSaleIn, commit: bool = True) -> EggSale:
+    """Создать продажу яйца. commit=False — когда вызов внутри другой операции
+    (продажа из заказа, §4.7): тогда коммит делает вызывающий код одним
+    транзактом, чтобы продажа и связь не разъехались при сбое."""
     if data.buyer_id is not None and db.get(Buyer, data.buyer_id) is None:
         raise ValueError("Покупатель не найден")
     amount = data.total_amount if data.total_amount is not None else data.dozens * data.price_per_ten
@@ -332,7 +335,8 @@ def create_sale(db: Session, data: EggSaleIn) -> EggSale:
     db.add(obj)
     db.flush()
     _sync_sale_money(db, obj)
-    db.commit()
+    if commit:
+        db.commit()
     return obj
 
 
@@ -353,7 +357,9 @@ def update_sale(db: Session, obj_id: int, data: EggSaleIn) -> EggSale:
     return obj
 
 
-def delete_sale(db: Session, obj_id: int) -> None:
+def delete_sale(db: Session, obj_id: int, commit: bool = True) -> None:
+    """Удалить продажу вместе с авто-записью денег. commit=False — из
+    delete_fulfillment (§4.7): там удаление связи и продажи — один транзакт."""
     obj = db.get(EggSale, obj_id)
     if obj is None:
         raise ValueError("Запись не найдена")
@@ -362,7 +368,8 @@ def delete_sale(db: Session, obj_id: int) -> None:
         date_=obj.date, category=None, amount=0, description=None,
     )
     db.delete(obj)
-    db.commit()
+    if commit:
+        db.commit()
 
 
 # --- Метрики стада ---

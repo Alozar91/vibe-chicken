@@ -2,9 +2,9 @@
 
 Заказ — план (что и сколько хотели). Факт живёт в обычных продажах:
 из заказа создаётся продажа яйца (layers) или продажа продукции партии
-(broiler), а связь хранится в order_fulfillments. Статус done ставится
-автоматически, когда по всем позициям продано не меньше заказанного,
-либо вручную (closed_manually).
+(broiler), а связь хранится в order_fulfillments. Продажи могут превышать
+план (заказ работает как журнал продаж покупателю), поэтому заказ НЕ
+закрывается автоматически — только вручную через set_status.
 """
 
 from datetime import date as Date, datetime, timezone
@@ -136,22 +136,6 @@ def set_status(db: Session, obj_id: int, data: OrderStatusIn) -> Order:
     return order
 
 
-def _recompute_status(db: Session, order: Order) -> None:
-    """Авто-статус: выполнен, если по всем позициям продано ≥ заказанного.
-
-    Действует только пока заказ не тронут вручную (closed_manually=False)
-    и не отменён.
-    """
-    if order.status == "cancelled" or order.closed_manually:
-        return
-    db.flush()  # autoflush=False: pending fulfillment должен попасть в SELECT
-    detail = _metrics(db, order)
-    if all(m.remaining_qty <= 0 for m in detail):
-        order.status = "done"
-    else:
-        order.status = "new"
-
-
 # --- Метрики заказа ---
 
 
@@ -278,19 +262,24 @@ def create_egg_fulfillment(db: Session, order_id: int, item_id: int, data: EggSa
     if item.kind != "egg":
         raise ValueError("Позиция не является продажей яйца")
     data.buyer_id = order.buyer_id
-    sale = layers_svc.create_sale(db, data)
-    f = OrderFulfillment(
-        order_id=order_id,
-        item_id=item_id,
-        sale_kind="egg_sale",
-        egg_sale_id=sale.id,
-        actual_qty=sale.dozens,
-        unit="dozens",
-        created_at=datetime.now(timezone.utc),
-    )
-    db.add(f)
-    _recompute_status(db, order)
-    db.commit()
+    # продажа + связь + авто-запись денег — один транзакт: при сбое не остаётся
+    # «осиротевшей» продажи, а повтор запроса не создаёт дубль (идемпотентность)
+    try:
+        sale = layers_svc.create_sale(db, data, commit=False)
+        f = OrderFulfillment(
+            order_id=order_id,
+            item_id=item_id,
+            sale_kind="egg_sale",
+            egg_sale_id=sale.id,
+            actual_qty=sale.dozens,
+            unit="dozens",
+            created_at=datetime.now(timezone.utc),
+        )
+        db.add(f)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     return _fulfillment_out(db, f)
 
 
@@ -311,36 +300,42 @@ def create_product_fulfillment(
         raise ValueError("Заказ отменён — продажи из него оформлять нельзя")
     if item.kind != "product" or item.product_type_id is None:
         raise ValueError("Позиция не является продажей продукции")
-    sale = broiler_svc.create_sale(
-        db, batch_id,
-        SaleIn(
-            date=data.date, product_type_id=item.product_type_id, product_kg=data.product_kg,
-            price_per_kg=data.price_per_kg, buyer_id=order.buyer_id, total_amount=data.total_amount,
-        ),
-    )
 
-    if item.unit == "pieces":
-        if actual_pieces is None:
-            w = avg_carcass_weight(db)
-            if w is None:
-                raise ValueError("Нет данных о среднем весе тушки — укажите количество штук вручную")
-            actual_pieces = round(float(sale.product_kg) / w, 2)
-        actual = actual_pieces
-    else:
-        actual = float(sale.product_kg)
+    # продажа + связь + авто-запись денег — один транзакт (как в egg-фулфилменте)
+    try:
+        sale = broiler_svc.create_sale(
+            db, batch_id,
+            SaleIn(
+                date=data.date, product_type_id=item.product_type_id, product_kg=data.product_kg,
+                price_per_kg=data.price_per_kg, buyer_id=order.buyer_id, total_amount=data.total_amount,
+            ),
+            commit=False,
+        )
 
-    f = OrderFulfillment(
-        order_id=order_id,
-        item_id=item_id,
-        sale_kind="batch_sale",
-        batch_sale_id=sale.id,
-        actual_qty=round(actual, 3),
-        unit=item.unit,
-        created_at=datetime.now(timezone.utc),
-    )
-    db.add(f)
-    _recompute_status(db, order)
-    db.commit()
+        if item.unit == "pieces":
+            if actual_pieces is None:
+                w = avg_carcass_weight(db)
+                if w is None:
+                    raise ValueError("Нет данных о среднем весе тушки — укажите количество штук вручную")
+                actual_pieces = round(float(sale.product_kg) / w, 2)
+            actual = actual_pieces
+        else:
+            actual = float(sale.product_kg)
+
+        f = OrderFulfillment(
+            order_id=order_id,
+            item_id=item_id,
+            sale_kind="batch_sale",
+            batch_sale_id=sale.id,
+            actual_qty=round(actual, 3),
+            unit=item.unit,
+            created_at=datetime.now(timezone.utc),
+        )
+        db.add(f)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     return _fulfillment_out(db, f)
 
 
@@ -351,15 +346,19 @@ def delete_fulfillment(db: Session, order_id: int, f_id: int) -> None:
     if f is None or f.order_id != order_id:
         raise ValueError("Запись не найдена")
     # Сначала снимаем связь: FK order_fulfillments.egg_sale_id / batch_sale_id
-    # мешает удалить продажу, пока fulfillment ещё в БД.
-    db.delete(f)
-    db.flush()
-    if f.sale_kind == "egg_sale":
-        layers_svc.delete_sale(db, f.egg_sale_id)
-    else:
-        sale = db.get(BatchSale, f.batch_sale_id)
-        if sale is None:
-            raise ValueError("Запись не найдена")
-        broiler_svc.delete_sale(db, sale.batch_id, f.batch_sale_id)
-    _recompute_status(db, order)
-    db.commit()
+    # мешает удалить продажу, пока fulfillment ещё в БД. Удаление связи,
+    # продажи и авто-записи денег — один транзакт.
+    try:
+        db.delete(f)
+        db.flush()
+        if f.sale_kind == "egg_sale":
+            layers_svc.delete_sale(db, f.egg_sale_id, commit=False)
+        else:
+            sale = db.get(BatchSale, f.batch_sale_id)
+            if sale is None:
+                raise ValueError("Запись не найдена")
+            broiler_svc.delete_sale(db, sale.batch_id, f.batch_sale_id, commit=False)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise

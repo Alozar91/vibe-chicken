@@ -25,6 +25,9 @@ export default function SaleModal({ c }: { c: OrderDetailCtl }) {
         <div className="space-y-3">
           <DateInput value={c.sDate} onChange={c.setSDate} />
           <TextInput value={c.sDozens} onChange={c.setSDozens} placeholder="десятков (факт)" required />
+          {saleItem && c.saleItemRemaining != null && c.saleItemRemaining <= 0 && (
+            <p className="text-xs text-amber-600">План по этой позиции уже выполнен — вводите фактическое количество.</p>
+          )}
           <div className="flex items-start gap-2">
             <TextInput value={c.sPriceTen} onChange={c.setSPriceTen} placeholder="цена за десяток" required />
             <PriceDictButton onClick={() => void c.applyDictPrice()} />

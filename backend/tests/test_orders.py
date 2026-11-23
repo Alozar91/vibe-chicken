@@ -110,7 +110,9 @@ def test_update_blocked_with_sales(db, env, buyer_id):
         svc.delete_order(db, order.id)
 
 
-def test_egg_fulfillment_and_auto_status(db, env, buyer_id, batch_id):
+def test_egg_fulfillment_keeps_new_status(db, env, buyer_id, batch_id):
+    """Заказ НЕ закрывается автоматически: продажи могут превышать план,
+    закрытие — только вручную (docs/concept.md §4.7)."""
     order = svc.create_order(db, _order_in(env, buyer_id))
     egg_item = order.items[0]   # 20 десятков
     carcass_item = order.items[1]  # 6 тушек
@@ -126,17 +128,25 @@ def test_egg_fulfillment_and_auto_status(db, env, buyer_id, batch_id):
     svc.create_egg_fulfillment(db, order.id, egg_item.id, EggSaleIn(date=D, dozens=6, price_per_ten=60))
     detail = svc.get_order_detail(db, order.id)
     assert order.status == "new"
-    # тушки: 6 шт × 0.7 кг = 4.2 кг → все позиции закрыты → done
+    # тушки: 6 шт × 0.7 кг = 4.2 кг → план выполнен, но заказ по-прежнему new
     svc.create_product_fulfillment(
         db, order.id, carcass_item.id, batch_id,
         OrderProductSaleIn(date=D, product_kg=4.2, price_per_kg=350),
     )
     detail = svc.get_order_detail(db, order.id)
-    assert order.status == "done"
+    assert order.status == "new"
     assert len(detail.fulfillments) == 3
     # продажи яйца создались с покупателем из заказа
     sales = layers_svc.list_sales(db)
     assert len(sales) == 2 and all(s.buyer_id == buyer_id for s in sales)
+    # продажи сверх плана разрешены (заказ = журнал продаж покупателю)
+    svc.create_egg_fulfillment(db, order.id, egg_item.id, EggSaleIn(date=D, dozens=3, price_per_ten=60))
+    detail = svc.get_order_detail(db, order.id)
+    assert detail.metrics[0].pct == 115.0  # 23 из 20
+    assert order.status == "new"
+    # закрывается только вручную
+    svc.set_status(db, order.id, OrderStatusIn(status="done"))
+    assert order.status == "done"
 
 
 def test_manual_status_and_cancelled_guard(db, env, buyer_id):
