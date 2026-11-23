@@ -22,6 +22,7 @@ import {
   ErrorBox,
   Modal,
   Page,
+  PriceDictButton,
   Select,
   TextInput,
 } from '../../components/ui'
@@ -381,9 +382,7 @@ export default function OrderDetailPage() {
             <TextInput value={sDozens} onChange={setSDozens} placeholder="десятков (факт)" required />
             <div className="flex items-start gap-2">
               <TextInput value={sPriceTen} onChange={setSPriceTen} placeholder="цена за десяток" required />
-              <Button kind="secondary" onClick={() => void applyDictPrice()}>
-                из справочника
-              </Button>
+              <PriceDictButton onClick={() => void applyDictPrice()} />
             </div>
             <p className="text-xs text-slate-400">
               Покупатель — {order.buyer.name} (из заказа). Доход попадёт в журнал денег автоматически.
@@ -406,9 +405,7 @@ export default function OrderDetailPage() {
             <div>
               <div className="flex items-start gap-2">
                 <TextInput value={sPriceKg} onChange={setSPriceKg} placeholder="цена за кг" required />
-                <Button kind="secondary" onClick={() => void applyDictPrice()}>
-                  из справочника
-                </Button>
+                <PriceDictButton onClick={() => void applyDictPrice()} />
               </div>
               {saleItem?.unit === 'pieces' && avgKg && sPriceKg.trim() !== '' && !Number.isNaN(Number(sPriceKg.replace(',', '.'))) && (
                 <p className="mt-1 text-xs text-slate-400">
