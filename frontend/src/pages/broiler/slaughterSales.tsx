@@ -52,6 +52,8 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
   }, [])
   const outputKg = rows.reduce((acc, r) => acc + (Number(r.kg) || 0), 0)
   const liveWeight = outputKg > 0 ? (outputKg / ratio).toFixed(1) : null
+  const headsNum = Number(heads)
+  const perHead = liveWeight && headsNum > 0 ? ((outputKg / ratio) / headsNum).toFixed(2) : null
 
   const reload = useCallback(async () => {
     setItems(await listSlaughters(batchId))
@@ -170,6 +172,11 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
             <div className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
               <span className="text-slate-500">Живой вес (расчёт): </span>
               <b className="text-slate-900">{liveWeight ? `${liveWeight} кг` : '—'}</b>
+              {perHead && (
+                <span className={`ml-2 text-xs ${Number(perHead) < 0.5 ? 'font-semibold text-red-600' : 'text-slate-400'}`}>
+                  ≈ {perHead} кг/гол{Number(perHead) < 0.5 && ' — слишком мало, проверьте кг'}
+                </span>
+              )}
               <span className="ml-1 text-xs text-slate-400">(выход {Math.round(ratio * 100)}%)</span>
             </div>
           </div>
