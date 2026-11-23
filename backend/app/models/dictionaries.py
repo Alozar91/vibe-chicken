@@ -62,12 +62,17 @@ class Buyer(Base):
 
 
 class ProductType(Base):
-    """Вид мясной продукции (тушка, потроха, печень…)."""
+    """Вид мясной продукции (тушка, потроха, печень…).
+
+    unit — единица, которой торгуют этим видом: 'pieces' (тушка, шт) или
+    'kg' (потроха, печень и прочее на вес). Используется заказами (§4.7).
+    """
 
     __tablename__ = "product_types"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
+    unit: Mapped[str] = mapped_column(String(10), default="kg")  # pieces | kg
 
 
 class MoneyCategory(Base):

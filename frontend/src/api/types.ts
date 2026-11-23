@@ -38,6 +38,7 @@ export interface Buyer {
 export interface ProductType {
   id: number
   name: string
+  unit: string
 }
 
 export type MoneyKind = 'income' | 'expense'
@@ -329,4 +330,64 @@ export interface BatchRow {
   revenue: number
   profit: number | null
   profit_per_head: number | null
+}
+
+// --- Заказы покупателей (concept.md §4.7) ---
+
+export type OrderStatus = 'new' | 'done' | 'cancelled'
+
+export interface Order {
+  id: number
+  date: string
+  buyer: Buyer
+  status: OrderStatus
+  closed_manually: boolean
+  comment: string | null
+  created_at: string
+  items: OrderItem[]
+}
+
+export interface OrderItem {
+  id: number
+  kind: 'egg' | 'product'
+  product_type_id: number | null
+  qty: number
+  unit: string
+  price_per_unit: number | null
+  product_type: ProductType | null
+}
+
+export interface OrderMetrics {
+  item_id: number
+  kind: string
+  unit: string
+  product_type_id: number | null
+  product_type_name: string | null
+  ordered_qty: number
+  fulfilled_qty: number
+  remaining_qty: number
+  pct: number | null
+}
+
+export interface OrderFulfillment {
+  id: number
+  item_id: number
+  sale_kind: string
+  egg_sale_id: number | null
+  batch_sale_id: number | null
+  actual_qty: number
+  unit: string
+  created_at: string
+}
+
+export interface OrderDetail extends Order {
+  fulfillments: OrderFulfillment[]
+  metrics: OrderMetrics[]
+}
+
+export interface OrderItemPayload {
+  kind: 'egg' | 'product'
+  product_type_id: number | null
+  qty: number
+  price_per_unit: number | null
 }

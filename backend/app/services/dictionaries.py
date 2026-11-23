@@ -208,7 +208,7 @@ def list_product_types(db: Session) -> list[ProductType]:
 
 def create_product_type(db: Session, data: ProductTypeIn) -> ProductType:
     _check_unique(db, ProductType, data.name)
-    obj = ProductType(name=data.name)
+    obj = ProductType(name=data.name, unit=data.unit)
     db.add(obj)
     db.commit()
     return obj
@@ -218,6 +218,7 @@ def update_product_type(db: Session, obj_id: int, data: ProductTypeIn) -> Produc
     obj = _get_or_404(db, ProductType, obj_id)
     _check_unique(db, ProductType, data.name, exclude_id=obj_id)
     obj.name = data.name
+    obj.unit = data.unit
     db.commit()
     return obj
 

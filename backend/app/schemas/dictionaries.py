@@ -1,6 +1,7 @@
 """Pydantic-схемы справочников."""
 
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
 
 
 class PlaceIn(BaseModel):
@@ -68,6 +69,7 @@ class BuyerOut(BuyerIn):
 
 class ProductTypeIn(BaseModel):
     name: str = Field(max_length=100)
+    unit: Literal["pieces", "kg"] = "kg"
 
 
 class ProductTypeOut(ProductTypeIn):
