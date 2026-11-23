@@ -114,8 +114,8 @@ def order_stops(durations: list[list[float]]) -> list[int]:
     n = len(durations) - 1  # число остановок
     if n <= 0:
         return []
-    if n > 12:
-        raise ValueError("Слишком много остановок — в поездке не больше 12 точек")
+    if n > 15:
+        raise ValueError("Слишком много остановок — в поездке не больше 15 точек")
 
     full = (1 << n) - 1
     inf = float("inf")

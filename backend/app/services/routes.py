@@ -28,7 +28,7 @@ from app.schemas.routes import (
 )
 from app.services import routing
 
-MAX_STOPS = 12
+MAX_STOPS = 15
 
 
 # --- точка фермы из настроек ---

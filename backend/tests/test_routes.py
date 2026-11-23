@@ -160,6 +160,6 @@ def test_route_max_stops():
     """Схема отсекает 13-ю остановку (лимит 12) ещё до сервиса."""
     from pydantic import ValidationError
 
-    stops = [StopIn(buyer_id=None, label=f"Т{i}", lat=54 + i * 0.01, lon=45.0) for i in range(13)]
+    stops = [StopIn(buyer_id=None, label=f"Т{i}", lat=54 + i * 0.01, lon=45.0) for i in range(16)]
     with pytest.raises(ValidationError):
         RouteIn(stops=stops)

@@ -25,7 +25,7 @@ class StopIn(BaseModel):
 
 class RouteIn(BaseModel):
     name: str | None = Field(default=None, max_length=200)  # None → «Поездка dd.mm»
-    stops: list[StopIn] = Field(min_length=1, max_length=12)
+    stops: list[StopIn] = Field(min_length=1, max_length=15)
 
 
 class StopOut(BaseModel):
