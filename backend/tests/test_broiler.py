@@ -3,12 +3,8 @@
 from datetime import date, timedelta
 
 import pytest
-from sqlalchemy import create_engine
 from sqlalchemy import select
-from sqlalchemy.orm import sessionmaker
 
-import app.models  # noqa: F401
-from app.core.db import Base
 from app.models.dictionaries import (
     Buyer,
     FeedBrand,
@@ -32,13 +28,17 @@ from app.schemas.dictionaries import VendorIn
 from app.services import broiler as svc
 from app.services import money
 from app.services import dictionaries as dict_svc
+from sqlalchemy.orm import sessionmaker
+
+from app.core.db import Base
+from tests.conftest import make_engine
 
 D = date(2025, 6, 1)
 
 
 @pytest.fixture()
 def db():
-    engine = create_engine("sqlite:///:memory:")
+    engine = make_engine()
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     with Session() as session:

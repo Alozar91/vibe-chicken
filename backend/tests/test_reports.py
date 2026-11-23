@@ -29,19 +29,19 @@ from app.services import feed as feed_svc
 from app.services import layers as lay
 from app.services import money as money_svc
 from app.services import reports as rep
+from sqlalchemy.orm import sessionmaker
+
+from app.core.db import Base
+from tests.conftest import make_engine
 
 TODAY = date.today()
 
 
 @pytest.fixture()
 def db():
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
 
-    import app.models  # noqa: F401
-    from app.core.db import Base
 
-    engine = create_engine("sqlite:///:memory:")
+    engine = make_engine()
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     with Session() as session:
