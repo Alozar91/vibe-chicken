@@ -71,6 +71,11 @@ def list_batches(db: Session) -> list[BroilerBatch]:
     return list(db.scalars(select(BroilerBatch).order_by(BroilerBatch.status, BroilerBatch.start_date.desc())))
 
 
+def get_batch(db: Session, batch_id: int) -> BroilerBatch:
+    """Одна партия по id; ValueError при отсутствии (роутер → 404)."""
+    return _get_batch(db, batch_id)
+
+
 def create_batch(db: Session, data: BatchIn) -> BroilerBatch:
     _check_vendor_chicks_tag(db, data.vendor_id)
     _check_refs(db, data.place_id)
