@@ -28,6 +28,11 @@ from app.models.layers import (  # noqa: F401
     LayFlock,
     LayFlockChange,
 )
+from app.models.orders import (  # noqa: F401
+    Order,
+    OrderFulfillment,
+    OrderItem,
+)
 from app.models.user import User  # noqa: F401
 from app.models.settings import AppSetting  # noqa: F401
 from app.models.warehouse import (  # noqa: F401
