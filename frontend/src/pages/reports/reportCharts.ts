@@ -12,13 +12,20 @@ const axisStyle = {
   splitLine: { lineStyle: { color: '#f1f5f9' } },
 }
 
+/** Ось X: подписи заметно ниже нулевой линии, сама ось всегда внизу сетки. */
+const xAxisStyle = {
+  ...axisStyle,
+  axisLabel: { ...axisStyle.axisLabel, margin: 14 },
+  onZero: false,
+}
+
 export function moneyMonthlyOption(points: MonthPoint[]): EChartsOption {
   return {
     color: ['#16a34a', '#ef4444', '#0ea5e9'],
     tooltip: { trigger: 'axis' },
     legend: { data: ['Доходы', 'Расходы', 'Баланс'], textStyle: { color: '#475569' } },
-    grid: { left: 56, right: 16, top: 36, bottom: 28 },
-    xAxis: { type: 'category', data: points.map((p) => p.month), ...axisStyle },
+    grid: { left: 56, right: 16, top: 36, bottom: 44 },
+    xAxis: { type: 'category', data: points.map((p) => p.month), ...xAxisStyle },
     yAxis: { type: 'value', ...axisStyle, axisLabel: { ...axisStyle.axisLabel, formatter: fmt } },
     series: [
       { name: 'Доходы', type: 'bar', data: points.map((p) => p.income) },
@@ -56,8 +63,8 @@ export function eggsOption(points: EggMonthPoint[]): EChartsOption {
     color: ['#d97706', '#0ea5e9'],
     tooltip: { trigger: 'axis' },
     legend: { data: ['Собрано, шт', 'Продано, десятков'], textStyle: { color: '#475569' } },
-    grid: { left: 56, right: 16, top: 36, bottom: 28 },
-    xAxis: { type: 'category', data: points.map((p) => p.month), ...axisStyle },
+    grid: { left: 56, right: 16, top: 36, bottom: 44 },
+    xAxis: { type: 'category', data: points.map((p) => p.month), ...xAxisStyle },
     yAxis: { type: 'value', ...axisStyle },
     series: [
       { name: 'Собрано, шт', type: 'bar', data: points.map((p) => p.collected) },
