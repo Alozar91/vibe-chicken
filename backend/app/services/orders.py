@@ -143,6 +143,7 @@ def _recompute_status(db: Session, order: Order) -> None:
     """
     if order.status == "cancelled" or order.closed_manually:
         return
+    db.flush()  # autoflush=False: pending fulfillment должен попасть в SELECT
     detail = _metrics(db, order)
     if all(m.remaining_qty <= 0 for m in detail):
         order.status = "done"
