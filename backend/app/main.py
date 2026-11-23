@@ -19,6 +19,7 @@ from app.routers import backup as backup_router
 from app.routers import layers as layers_router
 from app.routers import orders as orders_router
 from app.routers import reports as reports_router
+from app.routers import routes as routes_router
 from app.services import backup as backup_svc
 
 
@@ -70,3 +71,4 @@ app.include_router(layers_router.router)
 app.include_router(layers_router.sales_router)
 app.include_router(reports_router.router)
 app.include_router(orders_router.router)
+app.include_router(routes_router.router)
