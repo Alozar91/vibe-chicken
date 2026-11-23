@@ -92,8 +92,20 @@
 7.1. Коммиты — атомарные, сообщение на русском или английском единообразно
 (выбираем английский: `feat: add batch slaughter endpoint`).
 
-7.2. Ветки: `master` (код), `docs` (документация) — как заведено;
-фичи делаем в `master` (проект личный, PR-процесс не обязателен).
+7.2. Ветки: `master` (код), `docs` (документация). **Фичи — в отдельных ветках
+`feature/<имя>`, слияние в `master` через `--no-ff`** — в истории остаются
+узлы слияний, и блок изменений фичи виден как единое целое (решено владельцем:
+отслеживаемость изменений важнее простоты).
+
+7.2.1. Порядок работы над фичей:
+```bash
+git checkout master && git pull
+git checkout -b feature/slaughter-endpoint
+# ... коммиты ...
+git checkout master
+git merge --no-ff feature/slaughter-endpoint -m "Merge feature: забой и разделка"
+git push && git branch -d feature/slaughter-endpoint
+```
 
 7.3. Перед коммитом: `npm run build` (фронт) и импорт/линт бэкенда должны
 проходить.
