@@ -7,6 +7,7 @@ __pycache__/
 # БД и секреты
 backend/data/
 backend/.env
+.env
 
 # Node
 node_modules/
