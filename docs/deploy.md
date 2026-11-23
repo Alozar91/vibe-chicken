@@ -42,6 +42,7 @@ nano .env   # задать CHICKEN_ADMIN_PASSWORD (обязательно) и п
 | `CHICKEN_ADMIN_USERNAME`    | логин администратора                                  | `admin`      |
 | `CHICKEN_SESSION_HTTPS_ONLY`| кука сессии только по https                           | `true`       |
 | `CHICKEN_SECRET_KEY`        | ключ подписи сессий (иначе генерируется в volume)     | —            |
+| `CHICKEN_DATA_DIR`          | абсолютный путь каталога данных (иначе named volume)  | —            |
 
 ## 3. Запуск
 
@@ -107,11 +108,21 @@ docker compose up -d
 
 ## 7. Данные и бэкапы
 
-Всё состояние живёт в Docker-volume `chicken-data` (полное имя —
+По умолчанию всё состояние живёт в Docker-volume `chicken-data` (полное имя —
 `vibe-chicken_chicken-data`; внутри контейнера — `/app/data`): `app.db`,
 ночные бэкапы `app-YYYY-MM-DD-HHMM.db`, `secret.key`.
 
-Забрать бэкап на хост:
+**Вариант «данные в каталоге хоста»**: задайте в `.env` абсолютный путь —
+
+```
+CHICKEN_DATA_DIR=/srv/chicken
+```
+
+и после `docker compose up -d` данные будут лежать в обычном каталоге
+(те же `app.db`, `backups/`, `secret.key`), доступном rsync/restic/любым
+бэкап-агентам без docker-команд. Путь должен быть абсолютным.
+
+Забрать бэкап на хост (при volume; при bind mount файлы уже на хосте):
 
 ```bash
 docker compose cp backend:/app/data/backups/. ./backups/
@@ -121,6 +132,9 @@ docker compose cp backend:/app/data/backups/. ./backups/
 
 ```bash
 docker compose down
+# bind mount:
+cp app-2026-11-24-0300.db /srv/chicken/app.db
+# или volume:
 docker run --rm -v vibe-chicken_chicken-data:/data -v "$PWD":/src alpine \
     sh -c "cp /src/app-2026-11-24-0300.db /data/app.db"
 docker compose up -d
@@ -128,11 +142,9 @@ docker compose up -d
 
 (имя volume уточнить: `docker volume ls | grep chicken`)
 
-## 8. Вариант: каталог хоста вместо volume (bind mount)
+## 8. Переход с volume на каталог (bind mount) без потери данных
 
-Если бэкапы удобнее держать обычными файлами на хосте (rsync, restic,
-бэкап-агенты без docker-команд), volume можно заменить каталогом, например
-`/srv/chicken`. Миграция без потери данных:
+Если стек уже работает на volume и нужно переключить на `CHICKEN_DATA_DIR`:
 
 ```bash
 cd /opt/vibe-chicken
@@ -150,11 +162,8 @@ sudo docker run --rm \
 # 3) проверить, что на месте app.db, backups/, secret.key
 sudo ls -lh /srv/chicken /srv/chicken/backups
 
-# 4) в docker-compose.yml у сервиса backend заменить
-#        - chicken-data:/app/data
-#    на
-#        - /srv/chicken:/app/data
-#    (блок volumes: внизу файла можно удалить)
+# 4) добавить в .env строку CHICKEN_DATA_DIR=/srv/chicken
+#    (docker-compose.yml править не нужно)
 
 # 5) запустить и проверить
 docker compose up -d

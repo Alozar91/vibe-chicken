@@ -17,7 +17,9 @@ services:
       # Ключ подписи сессий; если пуст — сгенерируется и сохранится в volume
       CHICKEN_SECRET_KEY: ${CHICKEN_SECRET_KEY:-}
     volumes:
-      - chicken-data:/app/data # БД, бэкапы, secret.key
+      # Каталог данных (БД, бэкапы, secret.key). По умолчанию — named volume;
+      # если в .env задан CHICKEN_DATA_DIR (абсолютный путь) — данные лежат на хосте.
+      - ${CHICKEN_DATA_DIR:-chicken-data}:/app/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
       interval: 30s
