@@ -3,6 +3,8 @@ import { api } from './client'
 export interface User {
   id: number
   username: string
+  role: 'admin' | 'user'
+  is_active: boolean
 }
 
 export function login(username: string, password: string) {
@@ -18,4 +20,11 @@ export function logout() {
 
 export function me() {
   return api<User>('/api/auth/me')
+}
+
+export function changePassword(oldPassword: string, newPassword: string) {
+  return api<void>('/api/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+  })
 }

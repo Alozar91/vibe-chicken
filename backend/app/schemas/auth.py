@@ -11,3 +11,5 @@ class UserOut(BaseModel):
 
     id: int
     username: str
+    role: str = "user"  # admin | user
+    is_active: bool = True

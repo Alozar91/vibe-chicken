@@ -11,7 +11,7 @@ from app.core.config import ensure_secret_key, settings
 from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models.user import User
-from app.routers import auth, broiler, dictionaries, feed, health
+from app.routers import auth, broiler, dictionaries, feed, health, users
 from app.routers import settings as settings_router
 from app.routers import money as money_router
 from app.routers import backup as backup_router
@@ -57,6 +57,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(dictionaries.router)
 app.include_router(feed.router)
 app.include_router(broiler.router)
