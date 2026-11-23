@@ -13,6 +13,10 @@ import {
   deleteMortality,
   deleteTreatment,
   deleteWeighing,
+  updateFeeding,
+  updateMortality,
+  updateTreatment,
+  updateWeighing,
   listFeedings,
   listMortalities,
   listTreatments,
@@ -28,23 +32,46 @@ interface EventSectionProps<T> {
   title: string
   items: T[]
   renderRow: (item: T) => ReactNode
+  /** Заполняет state формы значениями записи (для режима редактирования) */
+  toForm?: (item: T) => void
   form: (onPayload: (payload: unknown) => void) => ReactNode
   onCreate: (payload: never) => Promise<unknown>
+  onUpdate?: (id: number, payload: never) => Promise<unknown>
   onDelete: (id: number) => Promise<unknown>
 }
 
-function EventSection<T extends { id: number }>({ title, items, renderRow, form, onCreate, onDelete }: EventSectionProps<T>) {
+function EventSection<T extends { id: number }>({ title, items, renderRow, toForm, form, onCreate, onUpdate, onDelete }: EventSectionProps<T>) {
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const payloadRef = { current: null as unknown }
+
+  const openCreate = () => {
+    setEditing(null)
+    setError(null)
+    setOpen(true)
+  }
+
+  const openEdit = (item: T) => {
+    setEditing(item)
+    setError(null)
+    setOpen(true)
+    // даём форме заполниться значениями записи
+    setTimeout(() => toForm?.(item), 0)
+  }
 
   const submit = async () => {
     setBusy(true)
     setError(null)
     try {
-      await onCreate(payloadRef.current as never)
+      if (editing && onUpdate) {
+        await onUpdate(editing.id, payloadRef.current as never)
+      } else {
+        await onCreate(payloadRef.current as never)
+      }
       setOpen(false)
+      setEditing(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка сохранения')
     } finally {
@@ -56,13 +83,18 @@ function EventSection<T extends { id: number }>({ title, items, renderRow, form,
     <Card>
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-semibold text-slate-900">{title}</h3>
-        <Button onClick={() => setOpen(true)}>+</Button>
+        <Button onClick={openCreate}>+</Button>
       </div>
       <ErrorBox message={error} />
       <ul className="mt-2 divide-y divide-slate-100">
         {items.map((item) => (
           <li key={item.id} className="flex items-center gap-2 py-1.5 text-sm">
             <span className="min-w-0 flex-1 truncate text-slate-700">{renderRow(item)}</span>
+            {onUpdate && toForm && (
+              <button className="text-xs text-amber-600 hover:underline" onClick={() => openEdit(item)}>
+                изменить
+              </button>
+            )}
             <button
               className="text-xs text-red-500 hover:underline"
               onClick={async () => {
@@ -80,7 +112,7 @@ function EventSection<T extends { id: number }>({ title, items, renderRow, form,
         {items.length === 0 && <li className="py-1.5 text-sm text-slate-400">Пока пусто</li>}
       </ul>
 
-      <Modal open={open} title={`Добавить — ${title}`} onClose={() => setOpen(false)}>
+      <Modal open={open} title={editing ? `Изменить — ${title}` : `Добавить — ${title}`} onClose={() => { setOpen(false); setEditing(null) }}>
         <ErrorBox message={error} />
         <form
           onSubmit={(e) => {
@@ -96,7 +128,7 @@ function EventSection<T extends { id: number }>({ title, items, renderRow, form,
             <Button type="submit" disabled={busy}>
               Сохранить
             </Button>
-            <Button kind="secondary" onClick={() => setOpen(false)}>
+            <Button kind="secondary" onClick={() => { setOpen(false); setEditing(null) }}>
               Отмена
             </Button>
           </div>
@@ -129,8 +161,14 @@ export function MortalitySection({ batchId, onChanged }: Props) {
       title="Падёж"
       items={items}
       renderRow={(m) => `${m.date} — ${m.head_count} гол${m.cause ? ` · ${m.cause}` : ''}`}
+      toForm={(m) => { setDate(m.date); setHeads(String(m.head_count)); setCause(m.cause ?? '') }}
       onCreate={async (payload: never) => {
         await createMortality(batchId, payload)
+        await reload()
+        onChanged()
+      }}
+      onUpdate={async (id: number, payload: never) => {
+        await updateMortality(batchId, id, payload)
         await reload()
         onChanged()
       }}
@@ -189,8 +227,14 @@ export function FeedingSection({ batchId, onChanged }: Props) {
       title="Кормление (списание со склада)"
       items={items}
       renderRow={(f) => `${f.date} — ${catName(f.feed_category_id)} / ${brandName(f.feed_brand_id)} · ${f.kg} кг`}
+      toForm={(f) => { setDate(f.date); setCat(String(f.feed_category_id)); setBrand(String(f.feed_brand_id)); setKg(String(f.kg)) }}
       onCreate={async (payload: never) => {
         await createFeeding(batchId, payload)
+        await reload()
+        onChanged()
+      }}
+      onUpdate={async (id: number, payload: never) => {
+        await updateFeeding(batchId, id, payload)
         await reload()
         onChanged()
       }}
@@ -251,8 +295,14 @@ export function WeighingSection({ batchId, onChanged }: Props) {
       title="Контрольные взвешивания"
       items={items}
       renderRow={(w) => `${w.date} — ${w.head_count} гол × ${w.avg_weight_kg} кг`}
+      toForm={(w) => { setDate(w.date); setHeads(String(w.head_count)); setAvg(String(w.avg_weight_kg)) }}
       onCreate={async (payload: never) => {
         await createWeighing(batchId, payload)
+        await reload()
+        onChanged()
+      }}
+      onUpdate={async (id: number, payload: never) => {
+        await updateWeighing(batchId, id, payload)
         await reload()
         onChanged()
       }}
@@ -302,8 +352,14 @@ export function TreatmentSection({ batchId, onChanged }: Props) {
       title="Обработки и лечение"
       items={items}
       renderRow={(t) => `${t.date} — ${t.description} (${t.cost} ₽)`}
+      toForm={(t) => { setDate(t.date); setDesc(t.description); setCost(String(t.cost)) }}
       onCreate={async (payload: never) => {
         await createTreatment(batchId, payload)
+        await reload()
+        onChanged()
+      }}
+      onUpdate={async (id: number, payload: never) => {
+        await updateTreatment(batchId, id, payload)
         await reload()
         onChanged()
       }}

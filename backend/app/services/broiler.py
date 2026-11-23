@@ -136,6 +136,18 @@ def create_mortality(db: Session, batch_id: int, data: MortalityIn) -> BatchMort
     return obj
 
 
+def update_mortality(db: Session, batch_id: int, obj_id: int, data: MortalityIn) -> BatchMortality:
+    batch = _get_batch(db, batch_id)
+    obj = db.get(BatchMortality, obj_id)
+    if obj is None or obj.batch_id != batch_id:
+        raise ValueError("Запись не найдена")
+    _check_event_date(db, batch, data.date)
+    for k, v in data.model_dump().items():
+        setattr(obj, k, v)
+    db.commit()
+    return obj
+
+
 def delete_mortality(db: Session, batch_id: int, obj_id: int) -> None:
     _get_batch(db, batch_id)
     obj = db.get(BatchMortality, obj_id)
@@ -167,6 +179,22 @@ def create_feeding(db: Session, batch_id: int, data: FeedingIn) -> BatchFeeding:
     return obj
 
 
+def update_feeding(db: Session, batch_id: int, obj_id: int, data: FeedingIn) -> BatchFeeding:
+    _get_batch(db, batch_id)
+    obj = db.get(BatchFeeding, obj_id)
+    if obj is None or obj.batch_id != batch_id:
+        raise ValueError("Запись не найдена")
+    _check_event_date(db, batch, data.date)
+    if db.get(FeedCategory, data.feed_category_id) is None:
+        raise ValueError("Категория корма не найдена")
+    if db.get(FeedBrand, data.feed_brand_id) is None:
+        raise ValueError("Производитель корма не найден")
+    for k, v in data.model_dump().items():
+        setattr(obj, k, v)
+    db.commit()
+    return obj
+
+
 def delete_feeding(db: Session, batch_id: int, obj_id: int) -> None:
     _get_batch(db, batch_id)
     obj = db.get(BatchFeeding, obj_id)
@@ -194,6 +222,18 @@ def create_weighing(db: Session, batch_id: int, data: WeighingIn) -> BatchWeighi
     return obj
 
 
+def update_weighing(db: Session, batch_id: int, obj_id: int, data: WeighingIn) -> BatchWeighing:
+    batch = _get_batch(db, batch_id)
+    obj = db.get(BatchWeighing, obj_id)
+    if obj is None or obj.batch_id != batch_id:
+        raise ValueError("Запись не найдена")
+    _check_event_date(db, batch, data.date)
+    for k, v in data.model_dump().items():
+        setattr(obj, k, v)
+    db.commit()
+    return obj
+
+
 def delete_weighing(db: Session, batch_id: int, obj_id: int) -> None:
     _get_batch(db, batch_id)
     obj = db.get(BatchWeighing, obj_id)
@@ -217,6 +257,18 @@ def create_treatment(db: Session, batch_id: int, data: TreatmentIn) -> BatchTrea
     _check_event_date(db, batch, data.date)
     obj = BatchTreatment(batch_id=batch_id, **data.model_dump())
     db.add(obj)
+    db.commit()
+    return obj
+
+
+def update_treatment(db: Session, batch_id: int, obj_id: int, data: TreatmentIn) -> BatchTreatment:
+    _get_batch(db, batch_id)
+    obj = db.get(BatchTreatment, obj_id)
+    if obj is None or obj.batch_id != batch_id:
+        raise ValueError("Запись не найдена")
+    _check_event_date(db, batch, data.date)
+    for k, v in data.model_dump().items():
+        setattr(obj, k, v)
     db.commit()
     return obj
 
@@ -301,6 +353,63 @@ def create_slaughter(db: Session, batch_id: int, data: SlaughterIn) -> dict:
     }
 
 
+def update_slaughter(db: Session, batch_id: int, obj_id: int, data: SlaughterIn) -> dict:
+    """Редактирование забоя: дата, голов, выходы (живой вес пересчитывается).
+
+    При изменении дат/голов проверяем, что продажи этого забоя остаются
+    валидными: дата каждой продажи ≥ новой даты забоя.
+    """
+    batch = _get_batch(db, batch_id)
+    obj = db.get(BatchSlaughter, obj_id)
+    if obj is None or obj.batch_id != batch_id:
+        raise ValueError("Запись не найдена")
+    _check_event_date(db, batch, data.date)
+
+    for o in data.outputs:
+        if db.get(ProductType, o.product_type_id) is None:
+            raise ValueError("Вид продукции не найден")
+
+    # голов: то, что уже было забито этим событием, освобождается;
+    # новое значение не должно превышать текущее поголовье + старое значение
+    metrics = compute_metrics(db, batch_id)
+    if data.head_count > metrics.current_head + obj.head_count:
+        raise ValueError(
+            f"Нельзя забить {data.head_count} гол.: доступно "
+            f"{metrics.current_head + obj.head_count} (с учётом перезаписи этого события)"
+        )
+
+    # продажи не могут оказаться раньше новой даты забоя
+    later_sale = db.scalar(
+        select(BatchSale.id).where(
+            BatchSale.batch_id == batch_id, BatchSale.date < data.date
+        ).limit(1)
+    )
+    if later_sale is not None:
+        raise ValueError("Есть продажи раньше новой даты забоя — измените или удалите их сначала")
+
+    output_kg = sum(o.kg for o in data.outputs)
+    ratio = settings_svc.get_float(db, "output_ratio_tushka")
+    if ratio <= 0:
+        raise ValueError("Коэффициент выхода в настройках должен быть больше 0")
+
+    obj.date = data.date
+    obj.head_count = data.head_count
+    obj.live_weight_kg = round(output_kg / ratio, 3)
+
+    # перезаписываем выходы целиком
+    for o in db.scalars(select(SlaughterOutput).where(SlaughterOutput.slaughter_id == obj_id)):
+        db.delete(o)
+    db.flush()
+    for o in data.outputs:
+        db.add(SlaughterOutput(slaughter_id=obj_id, **o.model_dump()))
+    db.commit()
+    return {
+        "id": obj.id, "batch_id": batch_id, "date": obj.date,
+        "head_count": obj.head_count, "live_weight_kg": float(obj.live_weight_kg),
+        "output_kg": round(output_kg, 3), "output_ratio": ratio,
+    }
+
+
 def delete_slaughter(db: Session, batch_id: int, obj_id: int) -> None:
     _get_batch(db, batch_id)
     obj = db.get(BatchSlaughter, obj_id)
@@ -348,6 +457,33 @@ def create_sale(db: Session, batch_id: int, data: SaleIn) -> BatchSale:
         buyer_id=data.buyer_id, total_amount=round(amount, 2),
     )
     db.add(obj)
+    db.commit()
+    return obj
+
+
+def update_sale(db: Session, batch_id: int, obj_id: int, data: SaleIn) -> BatchSale:
+    _get_batch(db, batch_id)
+    obj = db.get(BatchSale, obj_id)
+    if obj is None or obj.batch_id != batch_id:
+        raise ValueError("Запись не найдена")
+    if db.get(ProductType, data.product_type_id) is None:
+        raise ValueError("Вид продукции не найден")
+    if data.buyer_id is not None and db.get(Buyer, data.buyer_id) is None:
+        raise ValueError("Покупатель не найден")
+
+    # дата продажи ≥ первой даты забоя партии
+    first_slaughter = db.scalar(
+        select(BatchSlaughter.date).where(BatchSlaughter.batch_id == batch_id).order_by(BatchSlaughter.date).limit(1)
+    )
+    if first_slaughter is None:
+        raise ValueError("Сначала зафиксируйте забой — продавать можно только продукцию после разделки")
+    if data.date < first_slaughter:
+        raise ValueError("Дата продажи не может быть раньше даты забоя")
+
+    amount = data.total_amount if data.total_amount is not None else data.product_kg * data.price_per_kg
+    for k, v in data.model_dump().items():
+        setattr(obj, k, v)
+    obj.total_amount = round(amount, 2)
     db.commit()
     return obj
 
