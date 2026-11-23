@@ -120,12 +120,13 @@ def test_feeding_updates_fcr_with_chick_weight(db, env):
     svc.create_feeding(db, batch.id, FeedingIn(date=D, feed_category_id=env["cat_id"],
                                                feed_brand_id=env["brand_id"], kg=120))
     svc.create_slaughter(db, batch.id, SlaughterIn(
-        date=D, head_count=50, live_weight_kg=125.0,
+        date=D, head_count=50,
         outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=90)]))
     m = svc.compute_metrics(db, batch.id)
-    # привес = 125 − 0.04×50 = 123; FCR = 120/123
-    assert m.fcr == pytest.approx(0.976, abs=0.01)
-    assert m.output_pct == 72.0
+    # живой вес = 90 / 0.7 (коэффициент из настроек) = 128.57
+    # привес = 128.57 − 0.04×50 = 126.57; FCR = 120/126.57
+    assert m.fcr == pytest.approx(0.948, abs=0.01)
+    assert m.output_pct == 70.0  # 90/128.57 = 70% (равен коэффициенту)
     assert m.direct_costs == 5000.0
 
 
@@ -134,7 +135,7 @@ def test_slaughter_more_than_current_head(db, env):
     svc.create_mortality(db, batch.id, MortalityIn(date=D, head_count=10))
     with pytest.raises(ValueError, match="в партии осталось"):
         svc.create_slaughter(db, batch.id, SlaughterIn(
-            date=D, head_count=45, live_weight_kg=100,
+            date=D, head_count=45,
             outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=70)]))
 
 
@@ -148,7 +149,7 @@ def test_sale_date_not_before_slaughter(db, env):
 def test_sale_total_amount_keeps_input(db, env):
     batch = svc.create_batch(db, _batch_in(env))
     svc.create_slaughter(db, batch.id, SlaughterIn(
-        date=D, head_count=10, live_weight_kg=25,
+        date=D, head_count=10,
         outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=18)]))
     # кг×цена = 18×300 = 5400, вводим 5500 (факт чека)
     sale = svc.create_sale(db, batch.id, SaleIn(date=D, product_type_id=env["ptype_id"],

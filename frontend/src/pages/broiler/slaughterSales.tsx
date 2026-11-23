@@ -10,6 +10,7 @@ import {
   listSlaughters,
 } from '../../api/broiler'
 import { listBuyers, listProductTypes } from '../../api/dictionaries'
+import { listSettings } from '../../api/settings'
 import { Button, Card, Checkbox, ErrorBox, Modal, TextInput } from '../../components/ui'
 import { Select } from '../../components/ui'
 
@@ -36,8 +37,18 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
 
   const [date, setDate] = useState(today())
   const [heads, setHeads] = useState('')
-  const [liveWeight, setLiveWeight] = useState('')
   const [rows, setRows] = useState<OutputRow[]>([{ product_type_id: '', kg: '' }])
+
+  // живой вес вычисляется из выхода продукции через коэффициент из настроек
+  const [ratio, setRatio] = useState(0.7)
+  useEffect(() => {
+    void listSettings().then((all) => {
+      const r = all.find((s) => s.key === 'output_ratio_tushka')
+      if (r) setRatio(Number(r.value))
+    })
+  }, [])
+  const outputKg = rows.reduce((acc, r) => acc + (Number(r.kg) || 0), 0)
+  const liveWeight = outputKg > 0 ? (outputKg / ratio).toFixed(1) : null
 
   const reload = useCallback(async () => {
     setItems(await listSlaughters(batchId))
@@ -52,7 +63,6 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
   const openModal = () => {
     setDate(today())
     setHeads('')
-    setLiveWeight('')
     setRows([{ product_type_id: types[0]?.id.toString() ?? '', kg: '' }])
     setError(null)
     setOpen(true)
@@ -69,7 +79,6 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
       await createSlaughter(batchId, {
         date,
         head_count: Number(heads),
-        live_weight_kg: Number(liveWeight),
         outputs: rows
           .filter((r) => r.kg && r.product_type_id)
           .map((r) => ({ product_type_id: Number(r.product_type_id), kg: Number(r.kg) })),
@@ -134,10 +143,14 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
           <TextInput value={date} onChange={setDate} placeholder="Дата" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <TextInput value={heads} onChange={setHeads} placeholder="Голов" required />
-            <TextInput value={liveWeight} onChange={setLiveWeight} placeholder="Живой вес, кг" required />
+            <div className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
+              <span className="text-slate-500">Живой вес (расчёт): </span>
+              <b className="text-slate-900">{liveWeight ? `${liveWeight} кг` : '—'}</b>
+              <span className="ml-1 text-xs text-slate-400">(выход {Math.round(ratio * 100)}%)</span>
+            </div>
           </div>
           <div>
-            <p className="mb-2 text-sm font-medium text-slate-700">Выход продукции по видам:</p>
+            <p className="mb-2 text-sm font-medium text-slate-700">Выход продукции по видам (живой вес пересчитается сам):</p>
             <div className="space-y-2">
               {rows.map((r, i) => (
                 <div key={i} className="flex gap-2">

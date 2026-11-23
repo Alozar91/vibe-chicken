@@ -113,9 +113,11 @@ class SlaughterOutputOut(BaseModel):
 
 
 class SlaughterIn(BaseModel):
+    """Живой вес не вводится — вычисляется из выхода продукции через
+    коэффициент из настроек системы (концепция §4.1)."""
+
     date: Date
     head_count: int = Field(gt=0)
-    live_weight_kg: float = Field(gt=0)
     outputs: list[SlaughterOutputIn] = Field(min_length=1)
 
 

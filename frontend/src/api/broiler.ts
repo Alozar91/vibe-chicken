@@ -49,7 +49,7 @@ export const deleteTreatment = (b: number, id: number) =>
 export const listSlaughters = (b: number) => api<Slaughter[]>(ev(b, 'slaughters'))
 export const createSlaughter = (
   b: number,
-  data: { date: string; head_count: number; live_weight_kg: number; outputs: { product_type_id: number; kg: number }[] },
+  data: { date: string; head_count: number; outputs: { product_type_id: number; kg: number }[] },
 ) => api<Slaughter>(ev(b, 'slaughters'), { method: 'POST', body: JSON.stringify(data) })
 export const deleteSlaughter = (b: number, id: number) =>
   api<void>(`${ev(b, 'slaughters')}/${id}`, { method: 'DELETE' })

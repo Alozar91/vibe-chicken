@@ -29,6 +29,7 @@ from app.models.layers import (  # noqa: F401
     LayFlockChange,
 )
 from app.models.user import User  # noqa: F401
+from app.models.settings import AppSetting  # noqa: F401
 from app.models.warehouse import (  # noqa: F401
     FeedAdjustment,
     FeedPurchase,
