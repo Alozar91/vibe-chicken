@@ -107,8 +107,9 @@ docker compose up -d
 
 ## 7. Данные и бэкапы
 
-Всё состояние живёт в Docker-volume `chicken_data` (внутри контейнера —
-`/app/data`): `app.db`, ночные бэкапы `app-YYYY-MM-DD-HHMM.db`, `secret.key`.
+Всё состояние живёт в Docker-volume `chicken-data` (полное имя —
+`vibe-chicken_chicken-data`; внутри контейнера — `/app/data`): `app.db`,
+ночные бэкапы `app-YYYY-MM-DD-HHMM.db`, `secret.key`.
 
 Забрать бэкап на хост:
 
@@ -120,12 +121,50 @@ docker compose cp backend:/app/data/backups/. ./backups/
 
 ```bash
 docker compose down
-docker run --rm -v chicken-chicken-data:/data -v "$PWD":/src alpine \
+docker run --rm -v vibe-chicken_chicken-data:/data -v "$PWD":/src alpine \
     sh -c "cp /src/app-2026-11-24-0300.db /data/app.db"
 docker compose up -d
 ```
 
 (имя volume уточнить: `docker volume ls | grep chicken`)
+
+## 8. Вариант: каталог хоста вместо volume (bind mount)
+
+Если бэкапы удобнее держать обычными файлами на хосте (rsync, restic,
+бэкап-агенты без docker-команд), volume можно заменить каталогом, например
+`/srv/chicken`. Миграция без потери данных:
+
+```bash
+cd /opt/vibe-chicken
+
+# 1) остановить стек (БД не должна писаться во время копирования)
+docker compose down
+
+# 2) перенести содержимое volume в каталог хоста
+sudo mkdir -p /srv/chicken
+sudo docker run --rm \
+  -v vibe-chicken_chicken-data:/data:ro \
+  -v /srv/chicken:/out \
+  alpine sh -c "cp -a /data/. /out/"
+
+# 3) проверить, что на месте app.db, backups/, secret.key
+sudo ls -lh /srv/chicken /srv/chicken/backups
+
+# 4) в docker-compose.yml у сервиса backend заменить
+#        - chicken-data:/app/data
+#    на
+#        - /srv/chicken:/app/data
+#    (блок volumes: внизу файла можно удалить)
+
+# 5) запустить и проверить
+docker compose up -d
+curl -s http://localhost:8080/chicken/api/health
+docker compose exec backend ls /app/data/backups
+```
+
+Старый volume не удалять (`docker volume rm`), пока новая схема не проверена —
+это страховка. Каталогу не нужны особые права: контейнер работает от root,
+как и внутри volume.
 
 ## Замечания по путям `/chicken`
 
