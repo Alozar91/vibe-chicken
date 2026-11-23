@@ -28,16 +28,25 @@ def get_value(db: Session, key: str) -> str:
     return row.value
 
 
+def _normalize_number(value: str) -> str:
+    """Принимает запятую как десятичный разделитель («0,8» → «0.8»)."""
+    return value.strip().replace(",", ".")
+
+
 def get_float(db: Session, key: str) -> float:
-    return float(get_value(db, key))
+    return float(_normalize_number(get_value(db, key)))
 
 
 def set_value(db: Session, key: str, value: str) -> None:
     if key not in SETTING_DEFS:
         raise KeyError(key)
+    value = _normalize_number(value)
     # валидация числа для числовых настроек
     if key.startswith("output_ratio"):
-        v = float(value)
+        try:
+            v = float(value)
+        except ValueError:
+            raise ValueError("Введите число, например 0.7 (можно с запятой: 0,7)")
         if not (0 < v <= 1):
             raise ValueError("Коэффициент должен быть от 0 до 1 (например 0.7)")
     row = db.scalar(select(AppSetting).where(AppSetting.key == key))
