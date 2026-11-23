@@ -36,7 +36,9 @@ export default function Layout() {
     <div className="min-h-screen bg-slate-100">
       <header className="bg-white shadow-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <span className="text-lg font-bold text-slate-900">🐔 Vibe Chicken</span>
+          <NavLink to="/" className="text-lg font-bold text-slate-900 hover:text-amber-600">
+            🐔 Vibe Chicken
+          </NavLink>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-slate-500 sm:block">{user.username}</span>
             <button
