@@ -279,7 +279,8 @@ export default function OrderDetailPage() {
 
       <Card>
         <h3 className="font-semibold text-slate-900">Позиции: заказано → продано</h3>
-        <table className="mt-3 w-full text-sm">
+        <div className="overflow-x-auto">
+<table className="mt-3 w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-slate-400">
               <th className="pb-2">Что</th>
@@ -319,13 +320,15 @@ export default function OrderDetailPage() {
             })}
           </tbody>
         </table>
+        </div>
         {order.comment && <p className="mt-2 text-sm text-slate-500">{order.comment}</p>}
       </Card>
 
       {itemsWithSales.length > 0 && (
         <Card>
           <h3 className="font-semibold text-slate-900">Продажи по заказу</h3>
-          <table className="mt-3 w-full text-sm">
+          <div className="overflow-x-auto">
+<table className="mt-3 w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-slate-400">
                 <th className="pb-2">Дата</th>
@@ -367,6 +370,7 @@ export default function OrderDetailPage() {
               })}
             </tbody>
           </table>
+          </div>
           <p className="mt-2 text-xs text-slate-400">
             Доход по этим продажам уже отражён в журнале денег (авто-записи).
           </p>

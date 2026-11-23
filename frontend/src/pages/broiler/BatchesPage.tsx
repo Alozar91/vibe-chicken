@@ -143,7 +143,7 @@ export default function BatchesPage() {
       <ErrorBox message={error} />
 
       <Card>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-semibold text-slate-900">Список партий</h3>
           <Button onClick={openCreate} disabled={noVendors}>
             Новая партия

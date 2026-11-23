@@ -286,6 +286,7 @@ export default function FlocksPage() {
           Продажи яйца не привязаны к стаду (считаем одним хозяйством). Доход попадает в журнал денег автоматически.
         </p>
         {sales.length > 0 && (
+          <div className="overflow-x-auto">
           <table className="mt-3 w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-slate-400">
@@ -321,6 +322,7 @@ export default function FlocksPage() {
               ))}
             </tbody>
           </table>
+</div>
         )}
       </Card>
 

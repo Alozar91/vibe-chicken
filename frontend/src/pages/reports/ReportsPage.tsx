@@ -108,7 +108,7 @@ export default function ReportsPage() {
                 type="month"
                 value={pieMonth}
                 onChange={(e) => setPieMonth(e.target.value)}
-                className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+                className="rounded-lg border border-slate-300 px-2 py-1.5 text-base sm:text-sm"
               />
               <div className="w-32">
                 <Select

@@ -156,13 +156,13 @@ export default function MoneyPage() {
       <div className="grid grid-cols-3 gap-3">
         <Card className="!p-4">
           <p className="text-xs text-slate-400">Доходы</p>
-          <p className="text-lg font-semibold text-green-600">
+          <p className="text-base font-semibold text-green-600 sm:text-lg">
             {summary ? `+ ${fmt(summary.income)} ₽` : '…'}
           </p>
         </Card>
         <Card className="!p-4">
           <p className="text-xs text-slate-400">Расходы</p>
-          <p className="text-lg font-semibold text-red-600">
+          <p className="text-base font-semibold text-red-600 sm:text-lg">
             {summary ? `− ${fmt(summary.expense)} ₽` : '…'}
           </p>
         </Card>
@@ -182,7 +182,7 @@ export default function MoneyPage() {
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+              className="rounded-lg border border-slate-300 px-2 py-1 text-base sm:text-sm"
             />
             {month && (
               <button onClick={() => setMonth('')} className="text-xs text-slate-400 hover:text-slate-600">

@@ -32,11 +32,11 @@ export function Modal({
   if (!open) return null
   return (
     <div
-      className="fixed inset-0 z-20 flex items-center justify-center bg-slate-900/50 p-4"
+      className="fixed inset-0 z-20 flex items-end justify-center bg-slate-900/50 sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
-        className={`w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} rounded-2xl bg-white p-5 shadow-xl`}
+        className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:max-w-lg sm:rounded-2xl sm:p-5 ${wide ? 'sm:max-w-2xl' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -149,7 +149,7 @@ export function TextInput({
       placeholder={placeholder}
       required={required}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none"
+      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none sm:text-sm"
     />
   )
 }
@@ -170,7 +170,7 @@ export function DateInput({
       value={value}
       required={required}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none"
+      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none sm:text-sm"
     />
   )
 }
@@ -188,7 +188,7 @@ export function Select<T extends string>({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none"
+      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-base text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none sm:text-sm"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>

@@ -263,20 +263,20 @@ function RouteEditor({
       {editingId === null && !preview && (
         <div>
           <p className="text-sm text-slate-500">Выберите заказы для развоза:</p>
-          <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
             <span>Дата с</span>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+              className="rounded-lg border border-slate-300 px-2 py-1.5 text-base sm:text-sm"
             />
             <span>по</span>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+              className="rounded-lg border border-slate-300 px-2 py-1.5 text-base sm:text-sm"
             />
             <button
               type="button"

@@ -195,6 +195,7 @@ export default function FeedPage() {
             Нет продавцов с тегом «Корм» — добавьте в разделе «Продавцы».
           </p>
         )}
+        <div className="overflow-x-auto">
         <table className="mt-3 w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-slate-400">
@@ -221,6 +222,7 @@ export default function FeedPage() {
             ))}
           </tbody>
         </table>
+</div>
         {rows.some((r) => r.stock_kg < 0) && (
           <p className="mt-2 text-sm text-red-600">
             ⚠ Отрицательный остаток: расход превысил закупки. Заведите корректировку или закупку.
