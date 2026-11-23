@@ -37,7 +37,7 @@ export default function RoutesPage() {
     try {
       const [r, o] = await Promise.all([listRoutes(), listOrders()])
       setRoutes(r)
-      setOrders(o.filter((x) => x.status === 'new'))
+      setOrders(o.filter((x) => x.status !== 'cancelled'))
       setError(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка загрузки')
@@ -255,13 +255,17 @@ function RouteEditor({
           <div className="mt-2 max-h-72 space-y-1 overflow-y-auto rounded-xl bg-slate-50 p-2">
             {orders.length === 0 && <p className="text-sm text-slate-400">Новых заказов нет</p>}
             {orders.map((o) => (
-              <CheckboxRow
-                key={o.id}
-                label={`${o.buyer.name} · ${new Date(o.date).toLocaleDateString('ru-RU')}`}
-                hint={o.buyer.lat === null ? 'нет координат у покупателя' : undefined}
-                checked={selected.has(o.id)}
-                onChange={() => toggleOrder(o.id)}
-              />
+              <div key={o.id}>
+                <CheckboxRow
+                  label={`${o.buyer.name} · ${new Date(o.date).toLocaleDateString('ru-RU')}`}
+                  hint={o.buyer.lat === null ? 'нет координат у покупателя' : undefined}
+                  checked={selected.has(o.id)}
+                  onChange={() => toggleOrder(o.id)}
+                />
+                {o.status === 'done' && (
+                  <span className="ml-6 text-xs text-slate-400">уже выполнен (продажи оформлены)</span>
+                )}
+              </div>
             ))}
           </div>
           <div className="mt-3">

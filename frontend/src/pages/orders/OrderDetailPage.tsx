@@ -246,7 +246,7 @@ export default function OrderDetailPage() {
         <span className="text-sm text-slate-500">
           от {new Date(order.date + 'T00:00:00').toLocaleDateString()}
         </span>
-        {order.status === 'new' && (
+        {order.status !== 'cancelled' && (
           <>
             <Button kind="secondary" onClick={() => navigate(`/routes?orders=${order.id}`)}>
               Маршрут
