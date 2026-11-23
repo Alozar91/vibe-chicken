@@ -85,6 +85,10 @@ class OrderFulfillmentOut(BaseModel):
     actual_qty: float
     unit: str
     created_at: datetime
+    # данные связанной продажи (для отображения в карточке заказа)
+    sale_date: Date
+    price: float
+    amount: float
 
 
 class OrderMetrics(BaseModel):

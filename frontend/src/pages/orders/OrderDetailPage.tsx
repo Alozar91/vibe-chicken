@@ -94,7 +94,13 @@ export default function OrderDetailPage() {
     setSPriceTen(item.price_per_unit != null ? String(item.price_per_unit) : '')
     setSBatch('')
     setSKg('')
-    setSPriceKg(item.price_per_unit != null ? String(item.price_per_unit) : '')
+    // цена в заказе: яйцо и кг-продукция — за единицу массы; тушка — за штуку.
+    // Форма продажи просит цену за кг → для тушки пересчитываем по среднему весу
+    if (item.kind === 'product' && item.unit === 'pieces') {
+      setSPriceKg(item.price_per_unit != null && avgKg ? (item.price_per_unit / avgKg).toFixed(2) : '')
+    } else {
+      setSPriceKg(item.price_per_unit != null ? String(item.price_per_unit) : '')
+    }
     setSPieces('')
     setSPiecesAuto(true)
     setSaleOpen(true)
@@ -286,6 +292,7 @@ export default function OrderDetailPage() {
                 <th className="pb-2">Дата</th>
                 <th className="pb-2">Тип</th>
                 <th className="pb-2">Количество</th>
+                <th className="pb-2">Цена</th>
                 <th className="pb-2 text-right">Сумма</th>
                 <th className="pb-2" />
               </tr>
@@ -294,16 +301,20 @@ export default function OrderDetailPage() {
               {order.fulfillments.map((f) => {
                 const m = order.metrics.find((x) => x.item_id === f.item_id)
                 const label = f.sale_kind === 'egg_sale' ? 'Яйцо' : (m?.product_type_name ?? 'Продукция')
+                const priceUnit = f.sale_kind === 'egg_sale' ? '₽/дес' : '₽/кг'
                 return (
                   <tr key={f.id} className="border-t border-slate-100">
                     <td className="py-2 pr-2">
-                      {new Date(f.created_at.slice(0, 10) + 'T00:00:00').toLocaleDateString()}
+                      {new Date(f.sale_date + 'T00:00:00').toLocaleDateString()}
                     </td>
                     <td className="py-2 pr-2">{label}</td>
                     <td className="py-2 pr-2">
                       {fmt(f.actual_qty)} {unitLabel(f.unit)}
                     </td>
-                    <td className="py-2 pr-2 text-right">—</td>
+                    <td className="py-2 pr-2">
+                      {fmt(f.price)} {priceUnit}
+                    </td>
+                    <td className="py-2 pr-2 text-right">{fmt(f.amount)} ₽</td>
                     <td className="py-2 text-right">
                       <button
                         onClick={() => void removeFulfillment(f.id)}
@@ -318,7 +329,7 @@ export default function OrderDetailPage() {
             </tbody>
           </table>
           <p className="mt-2 text-xs text-slate-400">
-            Суммы продаж и доход в журнале денег — в самих записях продаж (яйцо: «Несушки и яйцо», бройлер: карточка партии).
+            Доход по этим продажам уже отражён в журнале денег (авто-записи).
           </p>
         </Card>
       )}
@@ -352,7 +363,14 @@ export default function OrderDetailPage() {
               ]}
             />
             <TextInput value={sKg} onChange={setSKg} placeholder="вес, кг (факт)" required />
-            <TextInput value={sPriceKg} onChange={setSPriceKg} placeholder="цена за кг" required />
+            <div>
+              <TextInput value={sPriceKg} onChange={setSPriceKg} placeholder="цена за кг" required />
+              {saleItem?.unit === 'pieces' && avgKg && sPriceKg.trim() !== '' && !Number.isNaN(Number(sPriceKg.replace(',', '.'))) && (
+                <p className="mt-1 text-xs text-slate-400">
+                  ≈ {fmt(Number(sPriceKg.replace(',', '.')) * avgKg)} ₽/шт при среднем весе тушки {avgKg.toFixed(2)} кг
+                </p>
+              )}
+            </div>
             {saleItem?.unit === 'pieces' && (
               <>
                 <CheckboxRow
