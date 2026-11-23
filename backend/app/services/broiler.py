@@ -101,6 +101,75 @@ def create_batch(db: Session, data: BatchIn) -> BroilerBatch:
     return batch
 
 
+def update_batch(db: Session, batch_id: int, data: BatchIn) -> BroilerBatch:
+    """Редактирование паспорта партии (закупка).
+
+    Правила:
+    - номер уникален (кроме самой себя), продавец с тегом «цыплята», место существует;
+    - голов не меньше, чем уже выбыло (падёж + забой);
+    - дата закупки не позже самой ранней даты события партии;
+    - транзакция денег «Цыплята» синхронизируется с ценой/головами/датой/номером.
+    """
+    batch = _get_batch(db, batch_id)
+    _check_vendor_chicks_tag(db, data.vendor_id)
+    _check_refs(db, data.place_id)
+
+    dup = db.scalar(select(BroilerBatch.id).where(BroilerBatch.code == data.code, BroilerBatch.id != batch_id))
+    if dup is not None:
+        raise ValueError(f"Партия с номером «{data.code}» уже есть")
+
+    dead_sl = int(db.scalar(select(func.coalesce(func.sum(BatchMortality.head_count), 0))
+                            .where(BatchMortality.batch_id == batch_id)) or 0)
+    slaughtered = int(db.scalar(select(func.coalesce(func.sum(BatchSlaughter.head_count), 0))
+                                .where(BatchSlaughter.batch_id == batch_id)) or 0)
+    if data.head_count < dead_sl + slaughtered:
+        raise ValueError(
+            f"Голов не может быть меньше выбывших ({dead_sl + slaughtered}: падёж + забой)"
+        )
+
+    # минимальная дата события: по каждой таблице отдельным запросом
+    event_dates = []
+    for model in (BatchMortality, BatchFeeding, BatchWeighing, BatchTreatment, BatchSlaughter, BatchSale):
+        d = db.scalar(select(func.min(model.date)).where(model.batch_id == batch_id))
+        if d is not None:
+            event_dates.append(d)
+    if event_dates and data.start_date > min(event_dates):
+        raise ValueError(
+            f"Дата закупки не может быть позже первого события партии ({min(event_dates)})"
+        )
+
+    for k, v in data.model_dump().items():
+        setattr(batch, k, v)
+
+    # синхронизация автотранзакции закупки цыплят
+    chick_cost = round(data.chick_price_per_head * data.head_count, 2)
+    money_cat = db.scalar(
+        select(MoneyCategory).where(MoneyCategory.kind == "expense", MoneyCategory.name == "Цыплята")
+    )
+    tx = None
+    if money_cat is not None:
+        tx = db.scalar(select(MoneyTransaction).where(
+            MoneyTransaction.batch_id == batch_id,
+            MoneyTransaction.money_category_id == money_cat.id))
+    if tx is not None:
+        if chick_cost > 0:
+            tx.date = data.start_date
+            tx.amount = chick_cost
+            tx.description = f"Закупка цыплят, партия {data.code}"
+        else:
+            db.delete(tx)
+    elif money_cat is not None and chick_cost > 0:
+        db.add(MoneyTransaction(
+            date=data.start_date,
+            money_category_id=money_cat.id,
+            amount=chick_cost,
+            description=f"Закупка цыплят, партия {data.code}",
+            batch_id=batch.id,
+        ))
+    db.commit()
+    return batch
+
+
 def close_batch(db: Session, batch_id: int) -> BroilerBatch:
     batch = _get_batch(db, batch_id)
     batch.status = "closed"
