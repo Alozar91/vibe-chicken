@@ -17,6 +17,10 @@ class BroilerBatch(Base):
     code: Mapped[str] = mapped_column(String(30), unique=True)
     place_id: Mapped[int] = mapped_column(ForeignKey("places.id"))
     start_date: Mapped[Date] = mapped_column(Date)
+    # Возраст при поступлении (дней): 1 = суточные; подрощенные — больше.
+    # Текущий возраст = (дата − start_date) + arrival_age_days; кура-дни
+    # (общие расходы) считаются только от start_date — реальное пребывание на ферме.
+    arrival_age_days: Mapped[int] = mapped_column(default=1)
     head_count: Mapped[int]
     cross: Mapped[str | None] = mapped_column(String(50), default=None)
     vendor_id: Mapped[int] = mapped_column(ForeignKey("vendors.id"))

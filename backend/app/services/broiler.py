@@ -604,6 +604,16 @@ def delete_sale(db: Session, batch_id: int, obj_id: int) -> None:
 # --- Метрики (все — запросами, стандарты §2.4) ---
 
 
+def batch_age_days(batch: BroilerBatch, on_date: Date | None = None) -> int:
+    """Возраст партии на дату (по умолчанию — сегодня).
+
+    Возраст при поступлении + число дней с поступления: суточные (1 день)
+    считаются как обычно, подрощенные — со своим стартом (§4.1).
+    """
+    d = on_date or Date.today()
+    return (d - batch.start_date).days + batch.arrival_age_days
+
+
 def compute_metrics(db: Session, batch_id: int) -> BatchMetrics:
     batch = _get_batch(db, batch_id)
 

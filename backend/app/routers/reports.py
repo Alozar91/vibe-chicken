@@ -7,7 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.schemas.reports import BatchRow, BuyerRow, CategorySlice, EggMonthPoint, MonthPoint
+from app.schemas.reports import (
+    BatchRow,
+    BuyerRow,
+    CategorySlice,
+    DashboardOut,
+    EggMonthPoint,
+    MonthPoint,
+)
 from app.services import reports as svc
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
@@ -19,6 +26,12 @@ def _check_months(months: int) -> int:
     if months < 1 or months > 24:
         raise HTTPException(status_code=400, detail="months должен быть от 1 до 24")
     return months
+
+
+@router.get("/dashboard", response_model=DashboardOut)
+def dashboard(db: Session = Depends(get_db)):
+    """Сводка для дашборда: KPI + последние партии и заказы."""
+    return svc.dashboard(db)
 
 
 @router.get("/monthly", response_model=list[MonthPoint])

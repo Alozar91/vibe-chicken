@@ -136,6 +136,8 @@ export interface BroilerBatch {
   code: string
   place_id: number
   start_date: string
+  /** возраст при поступлении, дней (1 = суточные, §4.1) */
+  arrival_age_days: number
   head_count: number
   cross: string | null
   vendor_id: number
@@ -402,4 +404,49 @@ export interface OrderItemPayload {
   product_type_id: number | null
   qty: number
   price_per_unit: number | null
+}
+
+// --- Дашборд (GET /api/reports/dashboard) ---
+export interface DashWeighing {
+  date: string
+  avg_weight_kg: number
+}
+
+export interface DashBatch {
+  id: number
+  code: string
+  place_name: string
+  start_date: string
+  status: string
+  heads_alive: number
+  age_days: number | null
+  last_weighing: DashWeighing | null
+}
+
+export interface DashOrderItem {
+  kind: 'egg' | 'product'
+  qty: number
+  unit: string
+}
+
+export interface DashOrder {
+  id: number
+  date: string
+  buyer_name: string
+  status: string
+  items: DashOrderItem[]
+}
+
+export interface Dashboard {
+  month_income: number
+  month_expense: number
+  month_balance: number
+  egg_collected: number
+  egg_dozens_sold: number
+  active_batches: number
+  active_heads: number
+  orders_open: number
+  feed_stock_kg: number
+  recent_batches: DashBatch[]
+  recent_orders: DashOrder[]
 }
