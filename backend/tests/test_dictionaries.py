@@ -93,3 +93,20 @@ def test_product_type_sale_price_and_prices_endpoint(db):
         db, tushka_id, ProductTypeIn(name="Тушка", unit="pieces", sale_price=380)
     )
     assert updated.sale_price == 380
+
+
+def test_buyer_coords_roundtrip(db):
+    """Координаты покупателя: сохраняются парой, половинка — ошибка."""
+    from pydantic import ValidationError
+
+    from app.schemas.dictionaries import BuyerIn
+    from app.services import dictionaries as svc
+
+    b = svc.create_buyer(
+        db, BuyerIn(name="Мария", phone=None, address="с. Ивановка", lat=54.18, lon=45.18)
+    )
+    got = svc.update_buyer(db, b.id, BuyerIn(name="Мария Петровна", lat=54.2, lon=45.2))
+    assert (got.lat, got.lon) == (54.2, 45.2)
+
+    with pytest.raises(ValidationError, match="обе координаты"):
+        BuyerIn(name="Пётр", lat=54.2)

@@ -33,6 +33,8 @@ export interface Buyer {
   name: string
   phone: string | null
   address: string | null
+  lat: number | null
+  lon: number | null
 }
 
 export interface ProductType {
@@ -449,4 +451,51 @@ export interface Dashboard {
   feed_stock_kg: number
   recent_batches: DashBatch[]
   recent_orders: DashOrder[]
+}
+
+// --- Маршруты доставки (§4.8) ---
+
+export interface RouteStopShared {
+  buyer_id: number | null
+  label: string
+  lat: number
+  lon: number
+  note: string | null
+  order_ids: number[]
+}
+
+export interface PreviewStop extends RouteStopShared {}
+
+export interface PreviewOut {
+  farm_label: string
+  farm_lat: number | null
+  farm_lon: number | null
+  approximate: boolean
+  total_seconds: number
+  total_meters: number
+  legs: number[]
+  no_coords_buyers: string[]
+  stops: PreviewStop[]
+}
+
+export interface RouteStop extends RouteStopShared {
+  id: number
+  position: number
+}
+
+export interface RouteSummary {
+  id: number
+  name: string
+  created_at: string | null
+  stops: RouteStop[]
+}
+
+export interface RouteDetail extends RouteSummary {
+  farm_label: string
+  farm_lat: number | null
+  farm_lon: number | null
+  approximate: boolean
+  total_seconds: number
+  total_meters: number
+  legs: number[]
 }

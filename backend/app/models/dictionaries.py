@@ -59,6 +59,10 @@ class Buyer(Base):
     name: Mapped[str] = mapped_column(String(150))
     phone: Mapped[str | None] = mapped_column(String(30), default=None)
     address: Mapped[str | None] = mapped_column(String(300), default=None)
+    # Координаты для построения маршрутов (§4.8); заполняются вручную
+    # или геокодированием адреса. Nullable — маршрут можно строить и без них.
+    lat: Mapped[float | None] = mapped_column(default=None)
+    lon: Mapped[float | None] = mapped_column(default=None)
 
 
 class ProductType(Base):

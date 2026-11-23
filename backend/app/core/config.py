@@ -38,6 +38,10 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    # Сервер матрицы маршрутов (OSRM). Дефолт — публичный демо-сервер;
+    # можно поднять свой и поменять одной строкой в .env
+    osrm_url: str = "https://router.project-osrm.org"
+
 
 settings = Settings()
 

@@ -21,11 +21,13 @@ export function Modal({
   title,
   onClose,
   children,
+  wide = false,
 }: {
   open: boolean
   title: string
   onClose: () => void
   children: ReactNode
+  wide?: boolean
 }) {
   if (!open) return null
   return (
@@ -34,7 +36,7 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className={`w-full ${wide ? 'max-w-2xl' : 'max-w-lg'} rounded-2xl bg-white p-5 shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -105,6 +107,25 @@ export function PriceDictButton({ onClick, disabled = false }: { onClick: () => 
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
         <circle cx="7.5" cy="7.5" r="0.5" fill="currentColor" />
+      </svg>
+    </button>
+  )
+}
+
+/** Кнопка-иконка «определить координаты по адресу» (геокодер, маршруты §4.8). */
+export function GeocodeButton({ onClick, disabled = false }: { onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title="Определить координаты по адресу"
+      aria-label="Определить координаты по адресу"
+      className="flex h-[38px] w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition hover:border-amber-400 hover:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:opacity-50"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+        <circle cx="12" cy="10" r="3" />
       </svg>
     </button>
   )
@@ -188,6 +209,32 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean; onCha
         className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400"
       />
       {label}
+    </label>
+  )
+}
+
+/** Чекбокс-строка с подписью и необязательной подсказкой (справа). */
+export function CheckboxRow({
+  checked,
+  onChange,
+  label,
+  hint,
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  label: string
+  hint?: string
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm text-slate-700">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 shrink-0 accent-amber-500"
+      />
+      <span className="min-w-0 flex-1">{label}</span>
+      {hint && <span className="text-xs text-amber-600">{hint}</span>}
     </label>
   )
 }

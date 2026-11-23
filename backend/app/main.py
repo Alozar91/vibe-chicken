@@ -12,12 +12,14 @@ from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models.user import User
 from app.routers import auth, broiler, dictionaries, feed, health, users
+from app.routers import geocode as geocode_router
 from app.routers import settings as settings_router
 from app.routers import money as money_router
 from app.routers import backup as backup_router
 from app.routers import layers as layers_router
 from app.routers import orders as orders_router
 from app.routers import reports as reports_router
+from app.routers import routes as routes_router
 from app.services import backup as backup_svc
 
 
@@ -58,6 +60,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(geocode_router.router)
 app.include_router(dictionaries.router)
 app.include_router(feed.router)
 app.include_router(broiler.router)
@@ -68,3 +71,4 @@ app.include_router(layers_router.router)
 app.include_router(layers_router.sales_router)
 app.include_router(reports_router.router)
 app.include_router(orders_router.router)
+app.include_router(routes_router.router)

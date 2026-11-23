@@ -248,6 +248,9 @@ export default function OrderDetailPage() {
         </span>
         {order.status === 'new' && (
           <>
+            <Button kind="secondary" onClick={() => navigate(`/routes?orders=${order.id}`)}>
+              Маршрут
+            </Button>
             <Button kind="secondary" onClick={() => void changeStatus('done')}>
               Закрыть заказ
             </Button>

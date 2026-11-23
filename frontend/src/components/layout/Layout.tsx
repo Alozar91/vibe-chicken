@@ -18,6 +18,7 @@ const navSections: { title: string; items: { to: string; label: string; adminOnl
     items: [
       { to: '/money', label: 'Журнал денег' },
       { to: '/orders', label: 'Заказы' },
+      { to: '/routes', label: 'Маршруты' },
       { to: '/reports', label: 'Отчёты' },
       { to: '/feed', label: 'Склад корма' },
       { to: '/batches', label: 'Партии бройлеров' },
