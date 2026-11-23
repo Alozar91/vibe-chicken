@@ -94,7 +94,7 @@ export default function RoutesPage() {
   return (
     <Page title="Маршруты">
       <ErrorBox message={error} />
-      <div className="flex justify-end">
+      <div className="mt-3 flex justify-end">
         <Button onClick={openNew}>+ Новая поездка</Button>
       </div>
 
