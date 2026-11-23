@@ -1,6 +1,6 @@
-# Модель данных v0.3
+# Модель данных v0.4
 
-> Следует из `concept.md` v1.9. Событийный принцип: итоги считаются запросами.
+> Следует из `concept.md` v1.10. Событийный принцип: итоги считаются запросами.
 > Все таблицы имеют `id` (PK) и, где уместно, `created_at`.
 > **Аудит:** все событийные таблицы (события партий, яйцо, корм, деньги) дополнительно
 > содержат `created_by` → `users.id` — кто внёс запись.
@@ -9,13 +9,13 @@
 
 | Таблица | Поля | Примечания |
 |---|---|---|
-| `users` | username, password_hash, role (`admin` / `user`), is_active, created_at | Управление пользователями — через UI админом. Отключённый (`is_active=false`) не может войти; его записи сохраняются |
+| `users` | username, password_hash, role (`admin` / `user`), is_active, created_at | Управление пользователями — через UI админом (§6 концепции). Отключённый (`is_active=false`) не может войти; его записи сохраняются |
 
 ## Справочники (редактируются в UI)
 
 | Таблица | Поля | Назначение |
 |---|---|---|
-| `places` | name, kind (`broiler_module` / `lay_house`), note | Места содержания: 2 бройлерных модуля + курятник несушек |
+| `places` | name, kind (`broiler_module` / `lay_house`), note | Места содержания (§4.1): 2 бройлерных модуля + курятник несушек |
 | `feed_categories` | name | Категории корма: старт, рост, финиш, несушка + свои |
 | `feed_brands` | name | Производители корма (для сравнения конверсии) |
 | `vendors` | name, note, types (JSON: цыплята/корм/лекарства/прочее — можно несколько) | Продавцы. Теги привязаны к задачам и проверяются жёстко: в операции доступен только продавец с нужным тегом |
@@ -27,25 +27,25 @@
 
 | Таблица | Поля | Примечания |
 |---|---|---|
-| `broiler_batches` | code (№ партии), place_id → places, start_date, head_count, cross, vendor_id → vendors, chick_price_per_head, **chick_avg_weight_kg (nullable, средний вес цыплёнка при закупке, кг/гол)**, status (`active` / `closed`), closed_at | Паспорт партии. Закупка цыплят автоматически порождает транзакцию денег |
+| `broiler_batches` | code (№ партии), place_id → places, start_date, head_count, cross, vendor_id → vendors, chick_price_per_head, **chick_avg_weight_kg (nullable, средний вес цыплёнка при закупке, кг/гол)**, status (`active` / `closed`), closed_at | Паспорт партии (§4.1). Закупка цыплят автоматически порождает транзакцию денег |
 | `batch_mortalities` | batch_id, date, head_count, cause | Падёж |
 | `batch_feedings` | batch_id, date, feed_category_id, feed_brand_id, kg | Списывает со склада |
 | `batch_weighings` | batch_id, date, head_count, avg_weight_kg | Опционально |
 | `batch_treatments` | batch_id, date, description, cost | Лечение/обработки |
-| `batch_slaughters` | batch_id, date, head_count, live_weight_kg | Забой+разделка; допускается несколько записей (частичный забой) |
-| `slaughter_outputs` | slaughter_id → batch_slaughters, product_type_id → product_types, kg | Выход продукции по видам (тушка, потроха, печень…) — несколько строк на забой |
+| `batch_slaughters` | batch_id, date, head_count, live_weight_kg | Забой+разделка (§4.1); допускается несколько записей (частичный забой) |
+| `slaughter_outputs` | slaughter_id → batch_slaughters, product_type_id → product_types, kg | Выход продукции по видам — несколько строк на забой |
 | `batch_sales` | batch_id, date, product_type_id → product_types, product_kg, price_per_kg, buyer_id → buyers (nullable), total_amount | Реализация. Если введённая сумма ≠ кг×цена — храним введённую (факт чека). Дата ≥ даты забоя |
 
 ## Несушки и яйцо
 
 | Таблица | Поля | Примечания |
 |---|---|---|
-| `lay_flocks` | name, place_id → places, start_date, status | Стадо несушек (сейчас одно) |
+| `lay_flocks` | name, place_id → places, start_date, status | Стадо несушек (§4.2; сейчас одно) |
 | `lay_flock_changes` | flock_id, date, head_delta (+/−), reason | Пополнение/выбраковка; текущее поголовье = сумма дельт |
 | `egg_collections` | flock_id, date, pieces | Ежедневный сбор |
 | `egg_selfuse` | flock_id, date, pieces | Расход «для себя» |
 | `egg_sales` | date, dozens, price_per_ten, buyer_id → buyers (nullable), total_amount | Продажа десятками; стадо не указывается (одно стадо; при втором — миграция) |
-| `lay_feedings` | flock_id, date, feed_category_id, feed_brand_id, kg | Расход корма стадом несушек (списывает со склада) |
+| `lay_feedings` | flock_id, date, feed_category_id, feed_brand_id, kg | Расход корма стадом несушек (§4.3; списывает со склада) |
 
 Остаток яйца = Σсборов − Σсамопотребление − Σпродаж×10.
 
@@ -53,7 +53,7 @@
 
 | Таблица | Поля | Примечания |
 |---|---|---|
-| `farm_writeoffs` | date, head_count, cause | Списание птицы без привязки к партии (вынужденный убой и пр.); уменьшает общее поголовье хозяйства |
+| `farm_writeoffs` | date, head_count, cause | Списание птицы без привязки к партии (§4.1, «одно обобщённое»); уменьшает общее поголовье хозяйства |
 
 ## Корм (склад)
 
