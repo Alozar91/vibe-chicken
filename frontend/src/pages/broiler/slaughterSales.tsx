@@ -14,7 +14,7 @@ import {
 import { getPrices, listBuyers, listProductTypes } from '../../api/dictionaries'
 import { carcassWeight } from '../../api/orders'
 import { listSettings } from '../../api/settings'
-import { Button, Card, Checkbox, DateInput, ErrorBox, Modal, TextInput } from '../../components/ui'
+import { Button, Card, Checkbox, DateInput, ErrorBox, Modal, PriceDictButton, TextInput } from '../../components/ui'
 import { Select } from '../../components/ui'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -401,9 +401,7 @@ export function SalesSection({ batchId, onChanged }: Props) {
             <TextInput value={kg} onChange={setKg} placeholder="Кг" required />
             <div className="flex items-start gap-2">
               <TextInput value={price} onChange={setPrice} placeholder="Цена за кг, ₽" required />
-              <Button kind="secondary" onClick={() => void applyDictPrice()}>
-                из справочника
-              </Button>
+              <PriceDictButton onClick={() => void applyDictPrice()} />
             </div>
           </div>
           {typeHint && <p className="text-xs text-slate-400">{typeHint}</p>}

@@ -21,6 +21,7 @@ import {
   ErrorBox,
   Modal,
   Page,
+  PriceDictButton,
   Select,
   TextInput,
 } from '../../components/ui'
@@ -403,9 +404,7 @@ export default function FlocksPage() {
                 onChange={(v) => setSaleForm({ ...saleForm, price_per_ten: v })}
                 placeholder="Цена за 10 шт, ₽"
               />
-              <Button kind="secondary" onClick={() => void applyEggDictPrice()}>
-                из справочника
-              </Button>
+              <PriceDictButton onClick={() => void applyEggDictPrice()} />
             </div>
           </div>
           {saleHint && <p className="text-xs text-slate-400">{saleHint}</p>}

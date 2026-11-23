@@ -87,6 +87,29 @@ export function Button({
   )
 }
 
+/** Кнопка-иконка «подставить цену из справочника» (ценник).
+
+Компактный квадрат вместо текстовой кнопки: стоит вплотную к полю цены
+в формах продаж. Смысл — во всплывающей подсказке (title).
+*/
+export function PriceDictButton({ onClick, disabled = false }: { onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title="Цена из справочника"
+      aria-label="Цена из справочника"
+      className="flex h-[38px] w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition hover:border-amber-400 hover:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-200 disabled:opacity-50"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+        <circle cx="7.5" cy="7.5" r="0.5" fill="currentColor" />
+      </svg>
+    </button>
+  )
+}
+
 export function TextInput({
   value,
   onChange,
