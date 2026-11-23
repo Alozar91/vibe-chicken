@@ -13,7 +13,7 @@ import {
   stock,
 } from '../../api/feed'
 import type { FeedAdjustment, FeedPurchase, FeedStockRow } from '../../api/types'
-import { Button, Card, ErrorBox, Modal, Page, Select, TextInput } from '../../components/ui'
+import { Button, Card, ErrorBox, Modal, Page, Select, TextInput, DateInput } from '../../components/ui'
 import { useDictsForFeed } from '../../hooks/useDictsForFeed'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -290,7 +290,7 @@ export default function FeedPage() {
           }}
           className="mt-1 space-y-3"
         >
-          <TextInput value={pDate} onChange={setPDate} placeholder="Дата" />
+          <DateInput value={pDate} onChange={setPDate} required />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Select
               value={pCat}
@@ -334,7 +334,7 @@ export default function FeedPage() {
           }}
           className="mt-1 space-y-3"
         >
-          <TextInput value={aDate} onChange={setADate} placeholder="Дата" />
+          <DateInput value={aDate} onChange={setADate} required />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Select
               value={aCat}

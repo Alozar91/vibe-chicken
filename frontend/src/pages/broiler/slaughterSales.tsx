@@ -13,7 +13,7 @@ import {
 } from '../../api/broiler'
 import { listBuyers, listProductTypes } from '../../api/dictionaries'
 import { listSettings } from '../../api/settings'
-import { Button, Card, Checkbox, ErrorBox, Modal, TextInput } from '../../components/ui'
+import { Button, Card, Checkbox, DateInput, ErrorBox, Modal, TextInput } from '../../components/ui'
 import { Select } from '../../components/ui'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -164,7 +164,7 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
           }}
           className="mt-1 space-y-3"
         >
-          <TextInput value={date} onChange={setDate} placeholder="Дата" />
+          <DateInput value={date} onChange={setDate} required />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <TextInput value={heads} onChange={setHeads} placeholder="Голов" required />
             <div className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
@@ -352,7 +352,7 @@ export function SalesSection({ batchId, onChanged }: Props) {
           }}
           className="mt-1 space-y-3"
         >
-          <TextInput value={date} onChange={setDate} placeholder="Дата" />
+          <DateInput value={date} onChange={setDate} required />
           <Select
             value={typeId}
             onChange={setTypeId}

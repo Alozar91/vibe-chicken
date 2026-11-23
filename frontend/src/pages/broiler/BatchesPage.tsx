@@ -11,7 +11,7 @@ import {
 } from '../../api/broiler'
 import { listPlaces, listVendors } from '../../api/dictionaries'
 import type { BroilerBatch, Place } from '../../api/types'
-import { Button, Card, ErrorBox, Modal, Page, Select, TextInput } from '../../components/ui'
+import { Button, Card, DateInput, ErrorBox, Modal, Page, Select, TextInput } from '../../components/ui'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -84,7 +84,7 @@ export default function BatchesPage() {
         cross: cross.trim() || null,
         vendor_id: Number(vendorId),
         chick_price_per_head: Number(pricePerHead),
-        chick_avg_weight_kg: avgWeight.trim() ? Number(avgWeight) : null,
+        chick_avg_weight_kg: avgWeight.trim() ? Number(avgWeight.replace(",", ".")) / 1000 : null,
       })
       setModalOpen(false)
       await refresh()
@@ -150,7 +150,7 @@ export default function BatchesPage() {
               {b.start_date} · {placeName(b.place_id)} · {b.head_count} гол · {b.chick_price_per_head} ₽/гол ·{' '}
               {vendorName(b.vendor_id)}
               {b.cross && <> · кросс {b.cross}</>}
-              {b.chick_avg_weight_kg && <> · {b.chick_avg_weight_kg} кг/гол</>}
+              {b.chick_avg_weight_kg && <> · {Math.round(b.chick_avg_weight_kg * 1000)} г/гол</>}
             </p>
             <div className="mt-2 flex gap-2">
               <Link
@@ -187,7 +187,7 @@ export default function BatchesPage() {
                 options={places.map((p) => ({ value: p.id.toString(), label: p.name }))}
               />
             </div>
-            <TextInput value={startDate} onChange={setStartDate} placeholder="Дата закупки" required />
+            <DateInput value={startDate} onChange={setStartDate} required />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <TextInput value={headCount} onChange={setHeadCount} placeholder="Голов" required />
@@ -202,11 +202,11 @@ export default function BatchesPage() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <TextInput value={pricePerHead} onChange={setPricePerHead} placeholder="Цена за голову, ₽" required />
-            <TextInput value={avgWeight} onChange={setAvgWeight} placeholder="Вес цыплёнка, кг (для FCR)" />
+            <TextInput value={avgWeight} onChange={setAvgWeight} placeholder="Вес цыплёнка, г (для FCR)" />
           </div>
           <p className="text-xs text-slate-400">
-            Вес цыплёнка при закупке позволяет считать конверсию корма (FCR) сразу; без него FCR появится
-            после двух контрольных взвешиваний.
+            Вес цыплёнка в граммах (например 42); позволяет считать конверсию корма (FCR) сразу;
+            без него FCR появится после двух контрольных взвешиваний.
           </p>
           <div className="flex gap-2 pt-1">
             <Button type="submit" disabled={busy || !placeId || !vendorId}>
