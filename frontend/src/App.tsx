@@ -18,6 +18,7 @@ import OrdersPage from './pages/orders/OrdersPage'
 import OrderFormPage from './pages/orders/OrderFormPage'
 import OrderDetailPage from './pages/orders/OrderDetailPage'
 import ReportsPage from './pages/reports/ReportsPage'
+import UsersPage from './pages/UsersPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="/orders/:id/edit" element={<OrderFormPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/users" element={<UsersPage />} />
         </Route>
       </Routes>
     </AuthProvider>

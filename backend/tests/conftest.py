@@ -6,6 +6,7 @@ PRAGMA foreign_keys — иначе FK-нарушения всплывают то
 
 import pytest
 from sqlalchemy import create_engine, event
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
 
 import app.models  # noqa: F401  (регистрация моделей для Base.metadata)
@@ -13,8 +14,17 @@ from app.core.db import Base
 
 
 def make_engine():
-    """In-memory SQLite с foreign_keys=ON — как на живом сервере."""
-    engine = create_engine("sqlite:///:memory:")
+    """In-memory SQLite с foreign_keys=ON — как на живом сервере.
+
+    StaticPool + check_same_thread=False: одна общая in-memory БД для всех
+    потоков (нужно роутерным тестам через TestClient — он работает в своём
+    потоке; сервисным тестам это тоже не мешает).
+    """
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
 
     @event.listens_for(engine, "connect")
     def _fk(dbapi_connection, _record):

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { getPrices, updateProductType } from '../api/dictionaries'
 import { listSettings, updateSetting } from '../api/settings'
 import { createBackup, listBackups } from '../api/backups'
+import { changePassword } from '../api/auth'
 import type { AppSetting, Prices } from '../api/types'
 import type { BackupInfo } from '../api/backups'
 import { Button, Card, ErrorBox, Page, TextInput } from '../components/ui'
@@ -235,6 +236,60 @@ export default function SettingsPage() {
           )}
         </div>
       </Card>
+
+      <PasswordCard />
     </Page>
+  )
+}
+
+/** Смена собственного пароля — доступна любому пользователю (concept §6). */
+function PasswordCard() {
+  const [oldPass, setOldPass] = useState('')
+  const [newPass, setNewPass] = useState('')
+  const [repeat, setRepeat] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  const submit = async () => {
+    setBusy(true)
+    setError(null)
+    setSaved(false)
+    try {
+      if (newPass !== repeat) throw new Error('Пароли не совпадают')
+      await changePassword(oldPass, newPass)
+      setSaved(true)
+      setOldPass('')
+      setNewPass('')
+      setRepeat('')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка сохранения')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="mt-4">
+      <h2 className="font-semibold text-slate-900">Сменить пароль</h2>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void submit()
+        }}
+        className="mt-3 grid gap-2 sm:grid-cols-3"
+      >
+        <TextInput value={oldPass} onChange={setOldPass} placeholder="Старый пароль" required />
+        <TextInput value={newPass} onChange={setNewPass} placeholder="Новый пароль" required />
+        <TextInput value={repeat} onChange={setRepeat} placeholder="Повторите новый" required />
+        <div className="sm:col-span-3">
+          <Button type="submit" disabled={busy || !oldPass || !newPass}>
+            Сменить
+          </Button>
+          {saved && <span className="ml-3 text-sm text-green-700">✓ Пароль изменён</span>}
+          {error && <span className="ml-3 text-sm text-red-600">{error}</span>}
+        </div>
+      </form>
+    </Card>
   )
 }

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
-const navSections: { title: string; items: { to: string; label: string }[] }[] = [
+const navSections: { title: string; items: { to: string; label: string; adminOnly?: boolean }[] }[] = [
   {
     title: 'Справочники',
     items: [
@@ -23,6 +23,7 @@ const navSections: { title: string; items: { to: string; label: string }[] }[] =
       { to: '/batches', label: 'Партии бройлеров' },
       { to: '/flocks', label: 'Несушки и яйцо' },
       { to: '/settings', label: 'Настройки' },
+      { to: '/users', label: 'Пользователи', adminOnly: true },
     ],
   },
 ]
@@ -52,7 +53,10 @@ export default function Layout() {
             🐔 Vibe Chicken
           </NavLink>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-slate-500 sm:block">{user.username}</span>
+            <span className="hidden text-sm text-slate-500 sm:block">
+              {user.username}
+              {user.role === 'admin' && <span className="ml-1 text-amber-600">·</span>}
+            </span>
             <button
               onClick={onLogout}
               className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50"
@@ -83,11 +87,13 @@ export default function Layout() {
                 <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   {section.title}
                 </p>
-                {section.items.map((item) => (
-                  <NavLink key={item.to} to={item.to} className={linkClass}>
-                    {item.label}
-                  </NavLink>
-                ))}
+                {section.items
+                  .filter((item) => !item.adminOnly || user.role === 'admin')
+                  .map((item) => (
+                    <NavLink key={item.to} to={item.to} className={linkClass}>
+                      {item.label}
+                    </NavLink>
+                  ))}
               </div>
             ))}
         </nav>
@@ -100,6 +106,7 @@ export default function Layout() {
             {navSections
               .filter((s) => 'title' in s)
               .flatMap((section) => section.items)
+              .filter((item) => !item.adminOnly || user.role === 'admin')
               .map((item) => (
                 <NavLink
                   key={item.to}
