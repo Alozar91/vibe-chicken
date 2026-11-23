@@ -27,5 +27,4 @@ def update_setting(key: str, data: SettingUpdateIn, db: Session = Depends(get_db
     except ValueError as e:
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail=str(e))
-    rows = svc.list_all(db)
-    return next(r for r in rows if r["key"] == key)
+    return svc.describe(db, key)

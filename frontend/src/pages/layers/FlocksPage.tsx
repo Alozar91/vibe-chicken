@@ -12,7 +12,7 @@ import {
   updateEggSale,
   updateFlock,
 } from '../../api/layers'
-import { listBuyers, listPlaces } from '../../api/dictionaries'
+import { getPrices, listBuyers, listPlaces } from '../../api/dictionaries'
 import type { Buyer, EggSale, LayFlock, Place } from '../../api/types'
 import {
   Button,
@@ -45,7 +45,24 @@ export default function FlocksPage() {
   const [editingSale, setEditingSale] = useState<EggSale | null>(null)
   const [saleForm, setSaleForm] = useState(emptySaleForm)
   const [saleError, setSaleError] = useState<string | null>(null)
+  const [saleHint, setSaleHint] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // кнопка «Цена из справочника»: цена яйца за десяток из настроек
+  const applyEggDictPrice = async () => {
+    setSaleError(null)
+    try {
+      const p = await getPrices()
+      if (p.egg_price_per_ten == null) {
+        setSaleHint('Цена яйца не задана — Настройки → «Цены продукции»')
+        return
+      }
+      setSaleForm((prev) => ({ ...prev, price_per_ten: String(p.egg_price_per_ten) }))
+      setSaleHint(null)
+    } catch (e) {
+      setSaleHint(e instanceof Error ? e.message : 'Ошибка загрузки справочника')
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -380,12 +397,18 @@ export default function FlocksPage() {
               onChange={(v) => setSaleForm({ ...saleForm, dozens: v })}
               placeholder="Десятков"
             />
-            <TextInput
-              value={saleForm.price_per_ten}
-              onChange={(v) => setSaleForm({ ...saleForm, price_per_ten: v })}
-              placeholder="Цена за 10 шт, ₽"
-            />
+            <div className="flex items-start gap-2">
+              <TextInput
+                value={saleForm.price_per_ten}
+                onChange={(v) => setSaleForm({ ...saleForm, price_per_ten: v })}
+                placeholder="Цена за 10 шт, ₽"
+              />
+              <Button kind="secondary" onClick={() => void applyEggDictPrice()}>
+                из справочника
+              </Button>
+            </div>
           </div>
+          {saleHint && <p className="text-xs text-slate-400">{saleHint}</p>}
           <Select
             value={saleForm.buyer_id}
             onChange={(v) => setSaleForm({ ...saleForm, buyer_id: v })}

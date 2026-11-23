@@ -15,6 +15,14 @@ SETTING_DEFS: dict[str, dict] = {
         "label": "Коэффициент выхода тушки от живого веса",
         "hint": "Живой вес ≈ вес продукции / коэффициент. 0.7 = тушка примерно 70% живого веса",
     },
+    # цена яйца по умолчанию; редактируется в карточке «Цены продукции» (Настройки),
+    # из общего списка настроек скрыта (hidden), читается через /api/dictionaries/prices
+    "egg_price_per_ten": {
+        "default": "",
+        "label": "Цена яйца по умолчанию, ₽/десяток",
+        "hint": "Подставляется кнопкой «Цена из справочника» в формах продаж яйца",
+        "hidden": True,
+    },
 }
 
 
@@ -49,6 +57,13 @@ def set_value(db: Session, key: str, value: str) -> None:
             raise ValueError("Введите число, например 0.7 (можно с запятой: 0,7)")
         if not (0 < v <= 1):
             raise ValueError("Коэффициент должен быть от 0 до 1 (например 0.7)")
+    if key == "egg_price_per_ten" and value != "":
+        try:
+            v = float(value)
+        except ValueError:
+            raise ValueError("Введите цену числом, например 60 или 60,5")
+        if v < 0:
+            raise ValueError("Цена не может быть отрицательной")
     row = db.scalar(select(AppSetting).where(AppSetting.key == key))
     if row is None:
         db.add(AppSetting(key=key, value=value))
@@ -57,16 +72,26 @@ def set_value(db: Session, key: str, value: str) -> None:
     db.commit()
 
 
+def describe(db: Session, key: str) -> dict:
+    """Описание одной настройки с текущим значением (для UI и ответов API)."""
+    if key not in SETTING_DEFS:
+        raise KeyError(key)
+    meta = SETTING_DEFS[key]
+    row = db.scalar(select(AppSetting).where(AppSetting.key == key))
+    return {
+        "key": key,
+        "value": row.value if row else meta["default"],
+        "default": meta["default"],
+        "label": meta["label"],
+        "hint": meta["hint"],
+    }
+
+
 def list_all(db: Session) -> list[dict]:
-    """Все известные настройки с текущими значениями (для UI)."""
+    """Видимые настройки с текущими значениями (для UI); скрытые не показываем."""
     result = []
     for key, meta in SETTING_DEFS.items():
-        row = db.scalar(select(AppSetting).where(AppSetting.key == key))
-        result.append({
-            "key": key,
-            "value": row.value if row else meta["default"],
-            "default": meta["default"],
-            "label": meta["label"],
-            "hint": meta["hint"],
-        })
+        if meta.get("hidden"):
+            continue
+        result.append(describe(db, key))
     return result

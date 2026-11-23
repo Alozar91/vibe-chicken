@@ -73,6 +73,9 @@ class ProductType(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
     unit: Mapped[str] = mapped_column(String(10), default="kg")  # pieces | kg
+    # цена продажи по умолчанию за единицу вида (₽/шт для pieces, ₽/кг для kg);
+    # подставляется кнопкой «из справочника» в формах продаж (concept.md §4.7)
+    sale_price: Mapped[float | None] = mapped_column(default=None)
 
 
 class MoneyCategory(Base):

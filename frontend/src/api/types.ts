@@ -39,6 +39,14 @@ export interface ProductType {
   id: number
   name: string
   unit: string
+  /** цена по умолчанию за единицу вида (₽/шт или ₽/кг) */
+  sale_price: number | null
+}
+
+/** Справочник цен для кнопки «Цена из справочника» в формах продаж. */
+export interface Prices {
+  egg_price_per_ten: number | null
+  products: { id: number; name: string; unit: string; price: number | null }[]
 }
 
 export type MoneyKind = 'income' | 'expense'

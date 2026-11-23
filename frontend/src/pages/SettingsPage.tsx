@@ -1,9 +1,10 @@
 /** Страница «Настройки»: коэффициенты расчётов + резервные копии. */
 
 import { useCallback, useEffect, useState } from 'react'
+import { getPrices, updateProductType } from '../api/dictionaries'
 import { listSettings, updateSetting } from '../api/settings'
 import { createBackup, listBackups } from '../api/backups'
-import type { AppSetting } from '../api/types'
+import type { AppSetting, Prices } from '../api/types'
 import type { BackupInfo } from '../api/backups'
 import { Button, Card, ErrorBox, Page, TextInput } from '../components/ui'
 
@@ -16,6 +17,11 @@ export default function SettingsPage() {
   const [backups, setBackups] = useState<BackupInfo[]>([])
   const [backupBusy, setBackupBusy] = useState(false)
 
+  // справочник цен: яйцо + виды продукции
+  const [prices, setPrices] = useState<Prices | null>(null)
+  const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({})
+  const [savedPriceKey, setSavedPriceKey] = useState<string | null>(null)
+
   const loadBackups = useCallback(async () => {
     try {
       setBackups(await listBackups())
@@ -24,9 +30,49 @@ export default function SettingsPage() {
     }
   }, [])
 
+  const loadPrices = useCallback(async () => {
+    try {
+      const p = await getPrices()
+      setPrices(p)
+      const drafts: Record<string, string> = { egg: p.egg_price_per_ten != null ? String(p.egg_price_per_ten) : '' }
+      for (const t of p.products) drafts[`pt${t.id}`] = t.price != null ? String(t.price) : ''
+      setPriceDrafts(drafts)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка загрузки цен')
+    }
+  }, [])
+
   useEffect(() => {
     void loadBackups()
   }, [loadBackups])
+
+  useEffect(() => {
+    void loadPrices()
+  }, [loadPrices])
+
+  const saveEggPrice = async () => {
+    setSavedPriceKey(null)
+    try {
+      await updateSetting('egg_price_per_ten', priceDrafts.egg ?? '')
+      setSavedPriceKey('egg')
+      await loadPrices()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка сохранения')
+    }
+  }
+
+  const saveProductPrice = async (id: number, name: string, unit: string) => {
+    setSavedPriceKey(null)
+    try {
+      const raw = (priceDrafts[`pt${id}`] ?? '').trim().replace(',', '.')
+      const price = raw === '' ? null : Number(raw)
+      await updateProductType(id, name, unit, price)
+      setSavedPriceKey(`pt${id}`)
+      await loadPrices()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка сохранения')
+    }
+  }
 
   const doBackup = async () => {
     setBackupBusy(true)
@@ -64,10 +110,75 @@ export default function SettingsPage() {
     }
   }
 
+  const num = (s: string) => Number(s.replace(',', '.'))
+  const eggDraft = priceDrafts.egg ?? ''
+
   return (
     <Page title="Настройки">
       <ErrorBox message={error} />
+
       <Card>
+        <h3 className="font-semibold text-slate-900">Цены продукции</h3>
+        <p className="mt-0.5 text-xs text-slate-400">
+          Подставляются кнопкой «Цена из справочника» в формах продаж. Цены видов продукции — за их
+          единицу (тушка — ₽/шт, потроха и печень — ₽/кг).
+        </p>
+        {prices && (
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-3">
+              <span className="min-w-0 flex-1 text-sm font-medium text-slate-900">
+                Яйцо <span className="text-xs font-normal text-slate-400">₽/десяток</span>
+              </span>
+              <div className="w-28">
+                <TextInput
+                  value={eggDraft}
+                  onChange={(v: string) => setPriceDrafts((prev) => ({ ...prev, egg: v }))}
+                  placeholder="—"
+                />
+              </div>
+              <Button
+                kind="secondary"
+                onClick={() => void saveEggPrice()}
+                disabled={eggDraft === (prices.egg_price_per_ten != null ? String(prices.egg_price_per_ten) : '')}
+              >
+                Сохранить
+              </Button>
+              {savedPriceKey === 'egg' && <span className="text-sm text-green-600">✓</span>}
+            </div>
+            {prices.products.map((t) => {
+              const draft = priceDrafts[`pt${t.id}`] ?? ''
+              const unitLabel = t.unit === 'pieces' ? '₽/шт' : '₽/кг'
+              return (
+                <div key={t.id} className="flex items-center gap-2 rounded-xl bg-slate-50 p-3">
+                  <span className="min-w-0 flex-1 text-sm font-medium text-slate-900">
+                    {t.name} <span className="text-xs font-normal text-slate-400">{unitLabel}</span>
+                  </span>
+                  <div className="w-28">
+                    <TextInput
+                      value={draft}
+                      onChange={(v: string) => setPriceDrafts((prev) => ({ ...prev, [`pt${t.id}`]: v }))}
+                      placeholder="—"
+                    />
+                  </div>
+                  <Button
+                    kind="secondary"
+                    onClick={() => void saveProductPrice(t.id, t.name, t.unit)}
+                    disabled={
+                      draft === (t.price != null ? String(t.price) : '') ||
+                      (draft.trim() !== '' && Number.isNaN(num(draft)))
+                    }
+                  >
+                    Сохранить
+                  </Button>
+                  {savedPriceKey === `pt${t.id}` && <span className="text-sm text-green-600">✓</span>}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </Card>
+
+      <Card className="mt-4">
         <p className="text-sm text-slate-500">
           Коэффициенты используются для автоматических пересчётов (например, живого веса при забое).
         </p>
