@@ -67,6 +67,11 @@ def create_mortality(batch_id: int, data: MortalityIn, db: Session = Depends(get
     return _handle(svc.create_mortality, db, batch_id, data)
 
 
+@router.put("/{batch_id}/mortalities/{obj_id}", response_model=MortalityOut)
+def update_mortality(batch_id: int, obj_id: int, data: MortalityIn, db: Session = Depends(get_db)):
+    return _handle(svc.update_mortality, db, batch_id, obj_id, data)
+
+
 @router.delete("/{batch_id}/mortalities/{obj_id}", status_code=204)
 def delete_mortality(batch_id: int, obj_id: int, db: Session = Depends(get_db)):
     _handle(svc.delete_mortality, db, batch_id, obj_id)
@@ -81,6 +86,11 @@ def feedings(batch_id: int, db: Session = Depends(get_db)):
 @router.post("/{batch_id}/feedings", response_model=FeedingOut, status_code=201)
 def create_feeding(batch_id: int, data: FeedingIn, db: Session = Depends(get_db)):
     return _handle(svc.create_feeding, db, batch_id, data)
+
+
+@router.put("/{batch_id}/feedings/{obj_id}", response_model=FeedingOut)
+def update_feeding(batch_id: int, obj_id: int, data: FeedingIn, db: Session = Depends(get_db)):
+    return _handle(svc.update_feeding, db, batch_id, obj_id, data)
 
 
 @router.delete("/{batch_id}/feedings/{obj_id}", status_code=204)
@@ -99,6 +109,11 @@ def create_weighing(batch_id: int, data: WeighingIn, db: Session = Depends(get_d
     return _handle(svc.create_weighing, db, batch_id, data)
 
 
+@router.put("/{batch_id}/weighings/{obj_id}", response_model=WeighingOut)
+def update_weighing(batch_id: int, obj_id: int, data: WeighingIn, db: Session = Depends(get_db)):
+    return _handle(svc.update_weighing, db, batch_id, obj_id, data)
+
+
 @router.delete("/{batch_id}/weighings/{obj_id}", status_code=204)
 def delete_weighing(batch_id: int, obj_id: int, db: Session = Depends(get_db)):
     _handle(svc.delete_weighing, db, batch_id, obj_id)
@@ -113,6 +128,11 @@ def treatments(batch_id: int, db: Session = Depends(get_db)):
 @router.post("/{batch_id}/treatments", response_model=TreatmentOut, status_code=201)
 def create_treatment(batch_id: int, data: TreatmentIn, db: Session = Depends(get_db)):
     return _handle(svc.create_treatment, db, batch_id, data)
+
+
+@router.put("/{batch_id}/treatments/{obj_id}", response_model=TreatmentOut)
+def update_treatment(batch_id: int, obj_id: int, data: TreatmentIn, db: Session = Depends(get_db)):
+    return _handle(svc.update_treatment, db, batch_id, obj_id, data)
 
 
 @router.delete("/{batch_id}/treatments/{obj_id}", status_code=204)
@@ -131,6 +151,11 @@ def create_slaughter(batch_id: int, data: SlaughterIn, db: Session = Depends(get
     return _handle(svc.create_slaughter, db, batch_id, data)
 
 
+@router.put("/{batch_id}/slaughters/{obj_id}", response_model=dict)
+def update_slaughter(batch_id: int, obj_id: int, data: SlaughterIn, db: Session = Depends(get_db)):
+    return _handle(svc.update_slaughter, db, batch_id, obj_id, data)
+
+
 @router.delete("/{batch_id}/slaughters/{obj_id}", status_code=204)
 def delete_slaughter(batch_id: int, obj_id: int, db: Session = Depends(get_db)):
     _handle(svc.delete_slaughter, db, batch_id, obj_id)
@@ -145,6 +170,11 @@ def sales(batch_id: int, db: Session = Depends(get_db)):
 @router.post("/{batch_id}/sales", response_model=SaleOut, status_code=201)
 def create_sale(batch_id: int, data: SaleIn, db: Session = Depends(get_db)):
     return _handle(svc.create_sale, db, batch_id, data)
+
+
+@router.put("/{batch_id}/sales/{obj_id}", response_model=SaleOut)
+def update_sale(batch_id: int, obj_id: int, data: SaleIn, db: Session = Depends(get_db)):
+    return _handle(svc.update_sale, db, batch_id, obj_id, data)
 
 
 @router.delete("/{batch_id}/sales/{obj_id}", status_code=204)

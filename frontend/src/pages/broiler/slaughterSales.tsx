@@ -6,6 +6,8 @@ import {
   createSlaughter,
   deleteSale,
   deleteSlaughter,
+  updateSale,
+  updateSlaughter,
   listSales,
   listSlaughters,
 } from '../../api/broiler'
@@ -28,7 +30,7 @@ interface OutputRow {
 
 export function SlaughtersSection({ batchId, onChanged }: Props) {
   const [items, setItems] = useState<
-    { id: number; date: string; head_count: number; live_weight_kg: number; outputs: { id: number; kg: number; product_type_name: string | null }[] }[]
+    { id: number; date: string; head_count: number; live_weight_kg: number; outputs: { id: number; kg: number; product_type_id: number; product_type_name: string | null }[] }[]
   >([])
   const [types, setTypes] = useState<{ id: number; name: string }[]>([])
   const [open, setOpen] = useState(false)
@@ -38,6 +40,7 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
   const [date, setDate] = useState(today())
   const [heads, setHeads] = useState('')
   const [rows, setRows] = useState<OutputRow[]>([{ product_type_id: '', kg: '' }])
+  const [editingId, setEditingId] = useState<number | null>(null)
 
   // живой вес вычисляется из выхода продукции через коэффициент из настроек
   const [ratio, setRatio] = useState(0.7)
@@ -61,9 +64,19 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
 
 
   const openModal = () => {
+    setEditingId(null)
     setDate(today())
     setHeads('')
     setRows([{ product_type_id: types[0]?.id.toString() ?? '', kg: '' }])
+    setError(null)
+    setOpen(true)
+  }
+
+  const openEdit = (id: number, date: string, heads: number, outs: { product_type_id: number; kg: number }[]) => {
+    setEditingId(id)
+    setDate(date)
+    setHeads(String(heads))
+    setRows(outs.map((o) => ({ product_type_id: String(o.product_type_id), kg: String(o.kg) })))
     setError(null)
     setOpen(true)
   }
@@ -76,13 +89,18 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
     setBusy(true)
     setError(null)
     try {
-      await createSlaughter(batchId, {
+      const payload = {
         date,
         head_count: Number(heads),
         outputs: rows
           .filter((r) => r.kg && r.product_type_id)
           .map((r) => ({ product_type_id: Number(r.product_type_id), kg: Number(r.kg) })),
-      })
+      }
+      if (editingId !== null) {
+        await updateSlaughter(batchId, editingId, payload)
+      } else {
+        await createSlaughter(batchId, payload)
+      }
       setOpen(false)
       await reload()
       onChanged()
@@ -108,6 +126,12 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
                 {s.date} — {s.head_count} гол · живой вес {s.live_weight_kg} кг
               </span>
               <button
+                className="text-xs text-amber-600 hover:underline"
+                onClick={() => openEdit(s.id, s.date, s.head_count, s.outputs.map((o) => ({ product_type_id: o.product_type_id, kg: o.kg })))}
+              >
+                изменить
+              </button>
+              <button
                 className="text-xs text-red-500 hover:underline"
                 onClick={async () => {
                   try {
@@ -131,7 +155,7 @@ export function SlaughtersSection({ batchId, onChanged }: Props) {
         {items.length === 0 && <li className="py-1.5 text-sm text-slate-400">Пока пусто</li>}
       </ul>
 
-      <Modal open={open} title="Забой и разделка" onClose={() => setOpen(false)}>
+      <Modal open={open} title={editingId !== null ? 'Изменить забой' : 'Забой и разделка'} onClose={() => { setOpen(false); setEditingId(null) }}>
         <ErrorBox message={error} />
         <form
           onSubmit={(e) => {
@@ -210,6 +234,7 @@ export function SalesSection({ batchId, onChanged }: Props) {
   const [buyerId, setBuyerId] = useState('')
   const [useCustom, setUseCustom] = useState(false)
   const [customAmount, setCustomAmount] = useState('')
+  const [editingId, setEditingId] = useState<number | null>(null)
 
   const reload = useCallback(async () => {
     setItems(await listSales(batchId))
@@ -228,6 +253,7 @@ export function SalesSection({ batchId, onChanged }: Props) {
   const typeName = (id: number) => types.find((t) => t.id === id)?.name ?? `#${id}`
 
   const openModal = () => {
+    setEditingId(null)
     setDate(today())
     setTypeId(types[0]?.id.toString() ?? '')
     setKg('')
@@ -239,18 +265,37 @@ export function SalesSection({ batchId, onChanged }: Props) {
     setOpen(true)
   }
 
+  const openEdit = (sale: (typeof items)[number]) => {
+    setEditingId(sale.id)
+    setDate(sale.date)
+    setTypeId(String(sale.product_type_id))
+    setKg(String(sale.product_kg))
+    setPrice(String(sale.price_per_kg))
+    setBuyerId(sale.buyer_id ? String(sale.buyer_id) : '')
+    const hasCustom = Math.abs(sale.total_amount - sale.product_kg * sale.price_per_kg) > 0.005
+    setUseCustom(hasCustom)
+    setCustomAmount(hasCustom ? String(sale.total_amount) : '')
+    setError(null)
+    setOpen(true)
+  }
+
   const submit = async () => {
     setBusy(true)
     setError(null)
     try {
-      await createSale(batchId, {
+      const payload = {
         date,
         product_type_id: Number(typeId),
         product_kg: Number(kg),
         price_per_kg: Number(price),
         buyer_id: buyerId ? Number(buyerId) : null,
         total_amount: useCustom && customAmount ? Number(customAmount) : null,
-      })
+      }
+      if (editingId !== null) {
+        await updateSale(batchId, editingId, payload)
+      } else {
+        await createSale(batchId, payload)
+      }
       setOpen(false)
       await reload()
       onChanged()
@@ -276,6 +321,9 @@ export function SalesSection({ batchId, onChanged }: Props) {
               <b>{s.total_amount} ₽</b>
               {s.buyer_id && <> · {buyerName(s.buyer_id)}</>}
             </span>
+            <button className="text-xs text-amber-600 hover:underline" onClick={() => openEdit(s)}>
+              изменить
+            </button>
             <button
               className="text-xs text-red-500 hover:underline"
               onClick={async () => {
@@ -295,7 +343,7 @@ export function SalesSection({ batchId, onChanged }: Props) {
         {items.length === 0 && <li className="py-1.5 text-sm text-slate-400">Пока пусто</li>}
       </ul>
 
-      <Modal open={open} title="Продажа продукции" onClose={() => setOpen(false)}>
+      <Modal open={open} title={editingId !== null ? 'Изменить продажу' : 'Продажа продукции'} onClose={() => { setOpen(false); setEditingId(null) }}>
         <ErrorBox message={error} />
         <form
           onSubmit={(e) => {

@@ -178,3 +178,65 @@ def test_no_fcr_without_data(db, env):
     batch = svc.create_batch(db, _batch_in(env, chick_avg_weight_kg=None))
     m = svc.compute_metrics(db, batch.id)
     assert m.fcr is None
+
+
+# --- Редактирование событий (PUT) ---
+
+
+def test_update_mortality(db, env):
+    batch = svc.create_batch(db, _batch_in(env))
+    m = svc.create_mortality(db, batch.id, MortalityIn(date=D, head_count=3))
+    upd = svc.update_mortality(db, batch.id, m.id, MortalityIn(date=D, head_count=5, cause="хищник"))
+    assert upd.head_count == 5
+    assert upd.cause == "хищник"
+    assert svc.compute_metrics(db, batch.id).dead_head == 5
+
+
+def test_update_weighing_changes_fcr(db, env):
+    # без веса цыплёнка FCR идёт по контрольным взвешиваниям (нужно ≥2)
+    batch = svc.create_batch(db, _batch_in(env, chick_avg_weight_kg=None))
+    svc.create_feeding(db, batch.id, FeedingIn(date=D, feed_category_id=env["cat_id"],
+                                               feed_brand_id=env["brand_id"], kg=120))
+    svc.create_weighing(db, batch.id, WeighingIn(date=D, head_count=10, avg_weight_kg=0.5))
+    w = svc.create_weighing(db, batch.id, WeighingIn(date=date(2025, 6, 20), head_count=10, avg_weight_kg=2.0))
+    fcr1 = svc.compute_metrics(db, batch.id).fcr
+    assert fcr1 is not None
+    # меняем вес последнего взвешивания — FCR пересчитывается
+    svc.update_weighing(db, batch.id, w.id, WeighingIn(date=date(2025, 6, 20), head_count=10, avg_weight_kg=2.4))
+    fcr2 = svc.compute_metrics(db, batch.id).fcr
+    assert fcr2 != fcr1
+
+
+def test_update_slaughter_recomputes_live_weight(db, env):
+    batch = svc.create_batch(db, _batch_in(env))
+    s = svc.create_slaughter(db, batch.id, SlaughterIn(
+        date=D, head_count=10, outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=70)]))
+    assert s["live_weight_kg"] == pytest.approx(100.0)  # 70/0.7
+    # редактируем выход — живой вес пересчитывается
+    upd = svc.update_slaughter(db, batch.id, s["id"], SlaughterIn(
+        date=D, head_count=10, outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=84)]))
+    assert upd["live_weight_kg"] == pytest.approx(120.0)
+
+
+def test_update_sale_keeps_amount_rule(db, env):
+    batch = svc.create_batch(db, _batch_in(env))
+    svc.create_slaughter(db, batch.id, SlaughterIn(
+        date=D, head_count=10, outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=18)]))
+    sale = svc.create_sale(db, batch.id, SaleIn(date=D, product_type_id=env["ptype_id"],
+                                                product_kg=10, price_per_kg=300))
+    # правим кг — сумма пересчитывается (total не задан)
+    upd = svc.update_sale(db, batch.id, sale.id, SaleIn(date=D, product_type_id=env["ptype_id"],
+                                                        product_kg=12, price_per_kg=300))
+    assert upd.total_amount == 3600.0
+
+
+def test_update_sale_date_before_slaughter_blocked(db, env):
+    batch = svc.create_batch(db, _batch_in(env))
+    svc.create_slaughter(db, batch.id, SlaughterIn(
+        date=D, head_count=10, outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=18)]))
+    sale = svc.create_sale(db, batch.id, SaleIn(date=D, product_type_id=env["ptype_id"],
+                                                product_kg=10, price_per_kg=300))
+    with pytest.raises(ValueError, match="раньше даты забоя"):
+        svc.update_sale(db, batch.id, sale.id, SaleIn(date=date(2025, 5, 1),
+                                                      product_type_id=env["ptype_id"],
+                                                      product_kg=10, price_per_kg=300))
