@@ -1,18 +1,19 @@
 """Тесты бизнес-логики справочников (уровень сервисов, без HTTP)."""
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 import app.models  # noqa: F401 — регистрация моделей
-from app.core.db import Base
 from app.schemas.dictionaries import PlaceIn, VendorIn
 from app.services import dictionaries as svc
+from sqlalchemy.orm import sessionmaker
+
+from app.core.db import Base
+from tests.conftest import make_engine
 
 
 @pytest.fixture()
 def db():
-    engine = create_engine("sqlite:///:memory:")
+    engine = make_engine()
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     with Session() as session:

@@ -314,6 +314,10 @@ def delete_fulfillment(db: Session, order_id: int, f_id: int) -> None:
     f = db.get(OrderFulfillment, f_id)
     if f is None or f.order_id != order_id:
         raise ValueError("Запись не найдена")
+    # Сначала снимаем связь: FK order_fulfillments.egg_sale_id / batch_sale_id
+    # мешает удалить продажу, пока fulfillment ещё в БД.
+    db.delete(f)
+    db.flush()
     if f.sale_kind == "egg_sale":
         layers_svc.delete_sale(db, f.egg_sale_id)
     else:
@@ -321,6 +325,5 @@ def delete_fulfillment(db: Session, order_id: int, f_id: int) -> None:
         if sale is None:
             raise ValueError("Запись не найдена")
         broiler_svc.delete_sale(db, sale.batch_id, f.batch_sale_id)
-    db.delete(f)
     _recompute_status(db, order)
     db.commit()

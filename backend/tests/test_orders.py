@@ -11,19 +11,19 @@ from app.schemas.orders import OrderIn, OrderProductSaleIn, OrderStatusIn
 from app.services import broiler as broiler_svc
 from app.services import layers as layers_svc
 from app.services import orders as svc
+from sqlalchemy.orm import sessionmaker
+
+from app.core.db import Base
+from tests.conftest import make_engine
 
 D = date(2026, 1, 10)
 
 
 @pytest.fixture()
 def db():
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
 
-    import app.models  # noqa: F401
-    from app.core.db import Base
 
-    engine = create_engine("sqlite:///:memory:")
+    engine = make_engine()
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     with Session() as session:
