@@ -279,3 +279,54 @@ export interface FlockMetrics {
   feed_kg: number
   lay_rate_pct: number | null
 }
+
+// --- Отчёты ---
+
+export interface MonthPoint {
+  month: string // YYYY-MM
+  income: number
+  expense: number
+  balance: number
+}
+
+export interface CategorySlice {
+  category_id: number
+  name: string
+  kind: 'income' | 'expense'
+  total: number
+}
+
+export interface EggMonthPoint {
+  month: string
+  collected: number
+  selfused: number
+  dozens_sold: number
+  revenue: number
+}
+
+export interface BuyerRow {
+  buyer_id: number | null
+  name: string
+  broiler_kg: number
+  broiler_amount: number
+  egg_dozens: number
+  egg_amount: number
+  total: number
+}
+
+export interface BatchRow {
+  id: number
+  code: string
+  place_name: string
+  status: string
+  start_date: string
+  survival_pct: number | null
+  fcr: number | null
+  feed_kg: number
+  feed_cost: number
+  direct_costs: number
+  shared_costs: number
+  revenue: number
+  profit: number | null
+  profit_per_head: number | null
+}

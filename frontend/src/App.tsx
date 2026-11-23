@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage'
 import MoneyPage from './pages/money/MoneyPage'
 import FlocksPage from './pages/layers/FlocksPage'
 import FlockDetailPage from './pages/layers/FlockDetailPage'
+import ReportsPage from './pages/reports/ReportsPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/money" element={<MoneyPage />} />
           <Route path="/flocks" element={<FlocksPage />} />
           <Route path="/flocks/:id" element={<FlockDetailPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>
