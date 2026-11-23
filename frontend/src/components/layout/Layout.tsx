@@ -2,12 +2,17 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
-const navItems = [
-  { to: '/', label: 'Дашборд' },
-  { to: '/dictionaries', label: 'Справочники' },
-  { to: '/dictionaries/vendors', label: 'Продавцы' },
-  { to: '/dictionaries/buyers', label: 'Покупатели' },
-  { to: '/dictionaries/money-categories', label: 'Категории денег' },
+const navSections: { title: string; items: { to: string; label: string }[] }[] = [
+  {
+    title: 'Справочники',
+    items: [
+      { to: '/dictionaries/places', label: 'Места' },
+      { to: '/dictionaries/vendors', label: 'Продавцы' },
+      { to: '/dictionaries/buyers', label: 'Покупатели' },
+      { to: '/dictionaries/feed', label: 'Корм и продукция' },
+      { to: '/dictionaries/money-categories', label: 'Категории денег' },
+    ],
+  },
 ]
 
 export default function Layout() {
@@ -54,26 +59,43 @@ export default function Layout() {
 
       <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6 sm:px-6">
         <nav className="hidden w-48 shrink-0 space-y-1 sm:block">
-          {navItems.map((item) => (
-            <NavLink key={item.to} to={item.to} className={linkClass} end={item.to === '/'}>
-              {item.label}
-            </NavLink>
-          ))}
+          <NavLink to="/" className={linkClass} end>
+            Дашборд
+          </NavLink>
+          {navSections
+            .filter((s) => 'title' in s)
+            .map((section) => (
+              <div key={section.title} className="pt-3">
+                <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {section.title}
+                </p>
+                {section.items.map((item) => (
+                  <NavLink key={item.to} to={item.to} className={linkClass}>
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            ))}
         </nav>
 
         {menuOpen && (
           <nav className="fixed inset-x-4 top-16 z-10 space-y-1 rounded-xl bg-white p-3 shadow-lg sm:hidden">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={linkClass}
-                end={item.to === '/'}
-                onClick={() => setMenuOpen(false)}
-              >
-                {item.label}
-              </NavLink>
-            ))}
+            <NavLink to="/" className={linkClass} end onClick={() => setMenuOpen(false)}>
+              Дашборд
+            </NavLink>
+            {navSections
+              .filter((s) => 'title' in s)
+              .flatMap((section) => section.items)
+              .map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={linkClass}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
           </nav>
         )}
 

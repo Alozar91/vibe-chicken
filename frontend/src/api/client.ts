@@ -31,5 +31,15 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     throw new ApiError(res.status, data?.detail ?? `Ошибка запроса (${res.status})`)
   }
 
+  // 204 No Content (DELETE) и другие пустые ответы — тела нет
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T
+  }
+
+  // 204 No Content (DELETE) и другие пустые ответы — тела нет
+  if (res.status === 204 || res.headers.get('content-length') === '0') {
+    return undefined as T
+  }
+
   return (await res.json()) as T
 }

@@ -16,6 +16,43 @@ export function ErrorBox({ message }: { message: string | null }) {
   return <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{message}</p>
 }
 
+export function Modal({
+  open,
+  title,
+  onClose,
+  children,
+}: {
+  open: boolean
+  title: string
+  onClose: () => void
+  children: ReactNode
+}) {
+  if (!open) return null
+  return (
+    <div
+      className="fixed inset-0 z-20 flex items-center justify-center bg-slate-900/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-semibold text-slate-900">{title}</h3>
+          <button
+            onClick={onClose}
+            className="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Закрыть"
+          >
+            ✕
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`rounded-2xl bg-white p-4 shadow-sm sm:p-5 ${className}`}>{children}</div>
 }

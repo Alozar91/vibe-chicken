@@ -1,38 +1,25 @@
-/** Страница «Справочники»: простые списки одним экраном.
- *  Логика — в useCrud, представление — SimpleCrudSection (стандарты §2).
- */
+/** Страница «Корм и продукция»: категории, производители, виды продукции. */
 
-import { MONEY_KIND_LABELS, PLACE_KIND_LABELS } from '../../api/types'
 import {
   createFeedBrand,
   createFeedCategory,
-  createPlace,
   createProductType,
   deleteFeedBrand,
   deleteFeedCategory,
-  deletePlace,
   deleteProductType,
   listFeedBrands,
   listFeedCategories,
-  listPlaces,
   listProductTypes,
   updateFeedBrand,
   updateFeedCategory,
-  updatePlace,
   updateProductType,
 } from '../../api/dictionaries'
-import type { FeedBrand, FeedCategory, Place, ProductType } from '../../api/types'
+import type { FeedBrand, FeedCategory, ProductType } from '../../api/types'
 import { Page } from '../../components/ui'
 import { SimpleCrudSection } from '../../components/dictionaries/SimpleCrudSection'
 import { useCrud } from '../../hooks/useCrud'
 
-export default function DictionariesPage() {
-  const places = useCrud<Place, Omit<Place, 'id'>>(
-    listPlaces,
-    (data) => createPlace(data),
-    (id, data) => updatePlace(id, data),
-    deletePlace,
-  )
+export default function FeedDictsPage() {
   const feedCategories = useCrud<FeedCategory, string>(
     listFeedCategories,
     (name) => createFeedCategory(name),
@@ -53,23 +40,8 @@ export default function DictionariesPage() {
   )
 
   return (
-    <Page title="Справочники">
+    <Page title="Корм и продукция">
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SimpleCrudSection
-          title="Места содержания"
-          items={places.items}
-          error={places.error}
-          onCreate={places.doCreate}
-          onUpdate={places.doUpdate}
-          onRemove={places.doRemove}
-          toInput={(name) => ({ name, kind: 'broiler_module' as const, note: null })}
-          namePlaceholder="Модуль 1"
-          renderExtra={(p) => (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-              {PLACE_KIND_LABELS[p.kind]}
-            </span>
-          )}
-        />
         <SimpleCrudSection
           title="Категории корма"
           items={feedCategories.items}
@@ -99,8 +71,8 @@ export default function DictionariesPage() {
         />
       </div>
       <p className="mt-3 text-xs text-slate-400">
-        Деньги ({MONEY_KIND_LABELS.income}/{MONEY_KIND_LABELS.expense}), продавцы и покупатели — в
-        соответствующих разделах.
+        Категории и производители нужны для учёта корма и сравнения конверсии (FCR); виды продукции —
+        для выхода после забоя.
       </p>
     </Page>
   )

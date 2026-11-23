@@ -1,7 +1,6 @@
-/** Категории денег: доход/расход, деактивация вместо удаления. */
+/** Категории денег: доход/расход, деактивация вместо удаления; форма в модалке. */
 
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import {
   createMoneyCategory,
   deactivateMoneyCategory,
@@ -10,7 +9,7 @@ import {
   updateMoneyCategory,
 } from '../../api/dictionaries'
 import type { MoneyCategory, MoneyKind } from '../../api/types'
-import { Button, Card, ErrorBox, Page, Select, TextInput } from '../../components/ui'
+import { Button, Card, ErrorBox, Modal, Page, Select, TextInput } from '../../components/ui'
 
 const KIND_STYLES: Record<MoneyKind, string> = {
   income: 'bg-green-100 text-green-700',
@@ -21,36 +20,58 @@ export default function MoneyCategoriesPage() {
   const [items, setItems] = useState<MoneyCategory[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<MoneyCategory | null>(null)
   const [name, setName] = useState('')
   const [kind, setKind] = useState<MoneyKind>('expense')
-  const [editingId, setEditingId] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
-  const refresh = async () => {
-    try {
-      setItems(await listMoneyCategories())
-      setError(null)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка загрузки')
-    } finally {
-      setLoading(false)
-    }
+  useEffect(() => {
+    void (async () => {
+      try {
+        setItems(await listMoneyCategories())
+        setError(null)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Ошибка загрузки')
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
+
+  const openCreate = () => {
+    setEditing(null)
+    setName('')
+    setKind('expense')
+    setFormError(null)
+    setModalOpen(true)
   }
 
-  void refresh()
+  const openEdit = (m: MoneyCategory) => {
+    setEditing(m)
+    setName(m.name)
+    setKind(m.kind)
+    setFormError(null)
+    setModalOpen(true)
+  }
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
+  const close = () => {
+    setModalOpen(false)
+    setEditing(null)
+  }
+
+  const submit = async () => {
     if (!name.trim()) return
     setBusy(true)
-    setError(null)
     try {
-      if (editingId === null) await createMoneyCategory(name.trim(), kind)
-      else await updateMoneyCategory(editingId, name.trim(), kind)
-      await refresh()
-      cancelEdit()
+      if (editing === null) await createMoneyCategory(name.trim(), kind)
+      else await updateMoneyCategory(editing.id, name.trim(), kind)
+      setItems(await listMoneyCategories())
+      setError(null)
+      close()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка сохранения')
+      setFormError(err instanceof Error ? err.message : 'Ошибка сохранения')
     } finally {
       setBusy(false)
     }
@@ -60,7 +81,8 @@ export default function MoneyCategoriesPage() {
     setBusy(true)
     try {
       await deactivateMoneyCategory(id)
-      await refresh()
+      setItems(await listMoneyCategories())
+      setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка')
     } finally {
@@ -68,43 +90,17 @@ export default function MoneyCategoriesPage() {
     }
   }
 
-  const startEdit = (m: MoneyCategory) => {
-    setEditingId(m.id)
-    setName(m.name)
-    setKind(m.kind)
-  }
-
-  const cancelEdit = () => {
-    setEditingId(null)
-    setName('')
-    setKind('expense')
-  }
-
   return (
     <Page title="Категории денег">
       <Card>
-        <h3 className="font-semibold text-slate-900">
-          {editingId === null ? 'Новая категория' : 'Редактирование'}
-        </h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-semibold text-slate-900">Список категорий</h3>
+          <Button onClick={openCreate}>Добавить</Button>
+        </div>
         <ErrorBox message={error} />
-        <form onSubmit={submit} className="mt-3 space-y-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
-            <TextInput value={name} onChange={setName} placeholder="Например: Корм" required />
-            <div className="w-full sm:w-44">
-              <Select value={kind} onChange={setKind} options={MONEY_KINDS} />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" disabled={busy}>
-              {editingId === null ? 'Добавить' : 'Сохранить'}
-            </Button>
-            {editingId !== null && (
-              <Button kind="secondary" onClick={cancelEdit}>
-                Отмена
-              </Button>
-            )}
-          </div>
-        </form>
+        <p className="mt-1 text-xs text-slate-400">
+          Категории не удаляются, а выключаются — журнал денег ссылается на них.
+        </p>
       </Card>
 
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -123,7 +119,7 @@ export default function MoneyCategoriesPage() {
               )}
             </div>
             <div className="mt-2 flex gap-2">
-              <Button kind="secondary" onClick={() => startEdit(m)}>
+              <Button kind="secondary" onClick={() => openEdit(m)}>
                 Изменить
               </Button>
               {m.is_active && (
@@ -138,6 +134,34 @@ export default function MoneyCategoriesPage() {
           <p className="text-sm text-slate-400">Пока пусто — добавьте категории для журнала</p>
         )}
       </div>
+
+      <Modal
+        open={modalOpen}
+        title={editing === null ? 'Новая категория' : 'Изменить категорию'}
+        onClose={close}
+      >
+        <ErrorBox message={formError} />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void submit()
+          }}
+          className="mt-1 space-y-3"
+        >
+          <TextInput value={name} onChange={setName} placeholder="Например: Корм" required />
+          <div className="w-full sm:w-56">
+            <Select value={kind} onChange={setKind} options={MONEY_KINDS} />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button type="submit" disabled={busy}>
+              Сохранить
+            </Button>
+            <Button kind="secondary" onClick={close}>
+              Отмена
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </Page>
   )
 }

@@ -3,9 +3,10 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import BuyersPage from './pages/dictionaries/BuyersPage'
-import DictionariesPage from './pages/dictionaries/DictionariesPage'
 import MoneyCategoriesPage from './pages/dictionaries/MoneyCategoriesPage'
 import VendorsPage from './pages/dictionaries/VendorsPage'
+import PlacesPage from './pages/dictionaries/PlacesPage'
+import FeedDictsPage from './pages/dictionaries/FeedDictsPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 
@@ -36,9 +37,11 @@ export default function App() {
           }
         >
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/dictionaries" element={<DictionariesPage />} />
+          <Route path="/dictionaries" element={<Navigate to="/dictionaries/places" replace />} />
+          <Route path="/dictionaries/places" element={<PlacesPage />} />
           <Route path="/dictionaries/vendors" element={<VendorsPage />} />
           <Route path="/dictionaries/buyers" element={<BuyersPage />} />
+          <Route path="/dictionaries/feed" element={<FeedDictsPage />} />
           <Route path="/dictionaries/money-categories" element={<MoneyCategoriesPage />} />
         </Route>
       </Routes>
