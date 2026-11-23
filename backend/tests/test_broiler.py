@@ -376,3 +376,21 @@ def test_general_expense_distribution_by_chicken_days(db, env):
     m = svc.compute_metrics(db, a.id)
     assert m.shared_costs > 0
     assert abs(m.profit - (m.revenue - m.direct_costs - m.shared_costs)) < 0.01
+
+
+def test_batch_arrival_age(db, env):
+    """Возраст при поступлении: default 1 (суточные), подрощенные — своё значение."""
+    from app.services.broiler import batch_age_days
+
+    daily = svc.create_batch(db, _batch_in(env))  # default
+    assert daily.arrival_age_days == 1
+    # суточные: в день поступления возраст 1
+    assert batch_age_days(daily, on_date=D) == 1
+
+    grown = svc.create_batch(db, _batch_in(
+        env, code="B-2025-2", start_date=D - timedelta(days=10), arrival_age_days=30))
+    assert grown.arrival_age_days == 30
+    # 10 дней на ферме + 30 при поступлении = 40
+    assert batch_age_days(grown, on_date=D) == 40
+    # возраст на конкретную дату (день поступления) = 30
+    assert batch_age_days(grown, on_date=D - timedelta(days=10)) == 30

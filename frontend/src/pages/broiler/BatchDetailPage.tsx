@@ -39,6 +39,10 @@ export default function BatchDetailPage() {
     </div>
   )
 
+  // возраст партии сегодня: дни с поступления + возраст при поступлении (§4.1)
+  const batchAgeDays = (b: BroilerBatch) =>
+    Math.max(0, Math.floor((Date.now() - new Date(b.start_date + 'T00:00:00').getTime()) / 86400000)) + b.arrival_age_days
+
   return (
     <Page title={batch ? `Партия ${batch.code}` : 'Партия'}>
       <ErrorBox message={error} />
@@ -46,8 +50,12 @@ export default function BatchDetailPage() {
         ← Все партии
       </Link>
 
-      {metrics && (
+      {batch && metrics && (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+          {batch.status === 'active' && metric(
+            'Возраст',
+            `${batchAgeDays(batch)} дн (при поступлении ${batch.arrival_age_days})`,
+          )}
           {metric('Поголовье сейчас', String(metrics.current_head))}
           {metric('Падёж', String(metrics.dead_head))}
           {metric('Забито', String(metrics.slaughtered_head))}

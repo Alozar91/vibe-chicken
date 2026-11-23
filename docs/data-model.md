@@ -27,7 +27,7 @@
 
 | Таблица | Поля | Примечания |
 |---|---|---|
-| `broiler_batches` | code (№ партии), place_id → places, start_date, head_count, cross, vendor_id → vendors, chick_price_per_head, **chick_avg_weight_kg (nullable, средний вес цыплёнка при закупке, кг/гол)**, status (`active` / `closed`), closed_at | Паспорт партии (§4.1). Закупка цыплят автоматически порождает транзакцию денег |
+| `broiler_batches` | code (№ партии), place_id → places, start_date, **arrival_age_days (возраст при поступлении, дней; default 1 — суточные)**, head_count, cross, vendor_id → vendors, chick_price_per_head, **chick_avg_weight_kg (nullable, средний вес цыплёнка при закупке, кг/гол)**, status (`active` / `closed`), closed_at | Паспорт партии (§4.1). Закупка цыплят автоматически порождает транзакцию денег. Текущий возраст = (сегодня − start_date) + arrival_age_days |
 | `batch_mortalities` | batch_id, date, head_count, cause | Падёж |
 | `batch_feedings` | batch_id, date, feed_category_id, feed_brand_id, kg | Списывает со склада |
 | `batch_weighings` | batch_id, date, head_count, avg_weight_kg | Опционально |

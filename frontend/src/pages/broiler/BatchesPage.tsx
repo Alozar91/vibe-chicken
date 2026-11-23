@@ -28,6 +28,7 @@ export default function BatchesPage() {
   const [code, setCode] = useState(`B-${today().slice(0, 7).replace('-', '')}-`)
   const [placeId, setPlaceId] = useState('')
   const [startDate, setStartDate] = useState(today())
+  const [arrivalAge, setArrivalAge] = useState('1')
   const [headCount, setHeadCount] = useState('')
   const [cross, setCross] = useState('')
   const [vendorId, setVendorId] = useState('')
@@ -59,6 +60,9 @@ export default function BatchesPage() {
   }, [])
 
   const placeName = (id: number) => places.find((p) => p.id === id)?.name ?? `#${id}`
+  // возраст партии сегодня: дни с поступления + возраст при поступлении (§4.1)
+  const batchAge = (b: BroilerBatch) =>
+    Math.max(0, Math.floor((Date.now() - new Date(b.start_date + 'T00:00:00').getTime()) / 86400000)) + b.arrival_age_days
   const vendorName = (id: number) => chicksVendors.find((v) => v.id === id)?.name ?? `#${id}`
 
   const openEdit = (b: BroilerBatch) => {
@@ -66,6 +70,7 @@ export default function BatchesPage() {
     setCode(b.code)
     setPlaceId(String(b.place_id))
     setStartDate(b.start_date)
+    setArrivalAge(String(b.arrival_age_days))
     setHeadCount(String(b.head_count))
     setCross(b.cross ?? '')
     setVendorId(String(b.vendor_id))
@@ -80,6 +85,7 @@ export default function BatchesPage() {
     setCode(`B-${today().slice(0, 7).replace('-', '')}-`)
     setPlaceId(places[0]?.id.toString() ?? '')
     setStartDate(today())
+    setArrivalAge('1')
     setHeadCount('')
     setCross('')
     setVendorId(chicksVendors[0]?.id.toString() ?? '')
@@ -97,6 +103,7 @@ export default function BatchesPage() {
         code: code.trim(),
         place_id: Number(placeId),
         start_date: startDate,
+        arrival_age_days: Number(arrivalAge) || 1,
         head_count: Number(headCount),
         cross: cross.trim() || null,
         vendor_id: Number(vendorId),
@@ -170,6 +177,7 @@ export default function BatchesPage() {
             </div>
             <p className="mt-1 text-sm text-slate-500">
               {b.start_date} · {placeName(b.place_id)} · {b.head_count} гол · {b.chick_price_per_head} ₽/гол ·{' '}
+              {b.status === 'active' ? batchAge(b) + ' дн · ' : ''}
               {vendorName(b.vendor_id)}
               {b.cross && <> · кросс {b.cross}</>}
               {b.chick_avg_weight_kg && <> · {Math.round(b.chick_avg_weight_kg * 1000)} г/гол</>}
@@ -217,7 +225,8 @@ export default function BatchesPage() {
             </div>
             <DateInput value={startDate} onChange={setStartDate} required />
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <TextInput value={arrivalAge} onChange={setArrivalAge} placeholder="Возраст, дней" required />
             <TextInput value={headCount} onChange={setHeadCount} placeholder="Голов" required />
             <TextInput value={cross} onChange={setCross} placeholder="Кросс (необязательно)" />
           </div>
@@ -233,6 +242,9 @@ export default function BatchesPage() {
             <TextInput value={avgWeight} onChange={setAvgWeight} placeholder="Вес цыплёнка, г (для FCR)" />
           </div>
           <p className="text-xs text-slate-400">
+            Возраст при поступлении: 1 — суточные цыплята; для подрощенных укажите фактический
+            возраст — он будет расти от даты поступления. Расходы на партию распределяются только
+            со дня её появления на ферме, уводить дату в прошлое не нужно.
             Вес цыплёнка в граммах (например 42); позволяет считать конверсию корма (FCR) сразу;
             без него FCR появится после двух контрольных взвешиваний.
             {editingId !== null && ' При изменении цены/голов запись закупки в журнале денег обновится автоматически.'}

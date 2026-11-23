@@ -9,6 +9,8 @@ class BatchIn(BaseModel):
     code: str = Field(max_length=30)
     place_id: int
     start_date: Date
+    # возраст при поступлении: 1 = суточные; подрощенные — больше (§4.1)
+    arrival_age_days: int = Field(default=1, ge=1)
     head_count: int = Field(gt=0)
     cross: str | None = Field(default=None, max_length=50)
     vendor_id: int

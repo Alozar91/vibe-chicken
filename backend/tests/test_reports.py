@@ -158,3 +158,85 @@ def test_batches_report_feed_cost(db, env):
     assert r.revenue == 4400.0
     assert r.profit == 4400 - 7500 - r.shared_costs
     assert r.profit_per_head is not None and abs(r.profit_per_head - r.profit / 100) < 0.01
+
+
+def test_dashboard_summary(db, env):
+    """Дашборд: KPI месяца, последние партии (возраст, взвешивание), заказы."""
+    from app.schemas.orders import OrderIn
+    from app.services import orders as orders_svc
+
+    # партия: поступила 30 дней назад подрощенной (20 дн) → сегодня возраст 50
+    batch = bro.create_batch(db, BatchIn(
+        code="B-DASH-1", place_id=env["place_id"], start_date=TODAY - timedelta(days=30),
+        arrival_age_days=20, head_count=100, chick_price_per_head=60,
+        chick_avg_weight_kg=0.04, vendor_id=env["vendor_id"]))
+    bro.create_mortality(db, batch.id, MortalityIn(date=TODAY - timedelta(days=5), head_count=3, cause=None))
+    bro.create_weighing(db, batch.id, WeighingIn(
+        date=TODAY - timedelta(days=5), head_count=50, avg_weight_kg=1.2))
+    bro.create_weighing(db, batch.id, WeighingIn(
+        date=TODAY - timedelta(days=12), head_count=50, avg_weight_kg=0.8))
+
+    # корм: 100 кг куплено, 30 скормлено → 70 на складе
+    feed_svc.create_purchase(db, feed_svc.FeedPurchaseIn(
+        date=TODAY - timedelta(days=20), feed_category_id=env["feed_cat"],
+        feed_brand_id=env["feed_brand"], vendor_id=env["vendor_id"],
+        kg=100, total_cost=5000, comment=None))
+    bro.create_feeding(db, batch.id, FeedingIn(
+        date=TODAY - timedelta(days=10), feed_category_id=env["feed_cat"],
+        feed_brand_id=env["feed_brand"], kg=30))
+
+    # яйцо за текущий месяц
+    flock = lay.create_flock(db, lay.LayFlockIn(
+        name="Несушки", place_id=env["lay_place_id"], start_date=TODAY - timedelta(days=60)))
+    lay.create_change(db, flock.id, lay.LayFlockChangeIn(date=TODAY - timedelta(days=60), head_delta=30))
+    lay.create_collection(db, flock.id, EggCollectionIn(date=TODAY, pieces=120))
+    lay.create_sale(db, EggSaleIn(
+        date=TODAY, dozens=50, price_per_ten=90, buyer_id=env["buyer_id"], total_amount=None))
+
+    # деньги за текущий месяц + заказ
+    money_svc.create_transaction(db, date_=TODAY, money_category_id=env["income_id"],
+                                 amount=900.0, description=None, batch_id=None)
+    money_svc.create_transaction(db, date_=TODAY, money_category_id=env["expense_id"],
+                                 amount=250.0, description=None, batch_id=None)
+    orders_svc.create_order(db, OrderIn(
+        date=TODAY, buyer_id=env["buyer_id"],
+        items=[{"kind": "egg", "qty": 20, "price_per_unit": 60}]))
+
+    d = rep.dashboard(db)
+    # 900 (ручной доход) + 4500 (авто-транзакция продажи яйца 50 дес × 90 ₽)
+    assert d.month_income == 5400.0 and d.month_expense == 250.0 and d.month_balance == 5150.0
+    assert d.egg_collected == 120 and d.egg_dozens_sold == 50
+    assert d.active_batches == 1 and d.active_heads == 97
+    assert d.orders_open == 1
+    assert d.feed_stock_kg == 70.0
+
+    assert len(d.recent_batches) == 1
+    b = d.recent_batches[0]
+    assert b.code == "B-DASH-1" and b.status == "active"
+    assert b.heads_alive == 97
+    assert b.age_days == 50  # 30 дней с поступления + возраст при поступлении 20
+    assert b.last_weighing is not None
+    assert b.last_weighing.avg_weight_kg == 1.2  # именно последнее (не первое)
+    assert b.last_weighing.date == (TODAY - timedelta(days=5)).isoformat()
+
+    assert len(d.recent_orders) == 1
+    o = d.recent_orders[0]
+    assert o.buyer_name == "Пётр" and o.status == "new"
+    assert o.items[0].kind == "egg" and o.items[0].qty == 20 and o.items[0].unit == "dozens"
+
+
+def test_dashboard_closed_batch_has_no_age(db, env):
+    """Закрытой партии возраст не показываем (age_days=None), но в списке она есть."""
+    batch = bro.create_batch(db, BatchIn(
+        code="B-DASH-2", place_id=env["place_id"], start_date=TODAY - timedelta(days=90),
+        head_count=50, chick_price_per_head=60, chick_avg_weight_kg=0.04,
+        vendor_id=env["vendor_id"]))
+    bro.create_slaughter(db, batch.id, SlaughterIn(
+        date=TODAY, head_count=47, live_weight_kg=94.0,
+        outputs=[SlaughterOutputIn(product_type_id=1, kg=65.0)]))
+    bro.close_batch(db, batch.id)
+    d = rep.dashboard(db)
+    mine = [b for b in d.recent_batches if b.code == "B-DASH-2"]
+    assert len(mine) == 1
+    assert mine[0].status == "closed" and mine[0].age_days is None
+    assert mine[0].heads_alive == 3

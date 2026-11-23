@@ -60,3 +60,67 @@ class BatchRow(BaseModel):
     revenue: float
     profit: float | None
     profit_per_head: float | None
+
+
+class DashboardWeighing(BaseModel):
+    """Последнее контрольное взвешивание партии."""
+
+    date: str
+    avg_weight_kg: float
+
+
+class DashboardBatch(BaseModel):
+    """Партия для дашборда: живое поголовье, возраст, последнее взвешивание."""
+
+    id: int
+    code: str
+    place_name: str
+    start_date: str
+    status: str
+    heads_alive: int
+    age_days: int | None = None  # только для активных (закрытым возраст не показываем)
+    last_weighing: DashboardWeighing | None = None
+
+
+class DashboardOrderItem(BaseModel):
+    """Позиция заказа для дашборда."""
+
+    kind: str  # egg | product
+    qty: float
+    unit: str  # dozens | pieces | kg
+
+
+class DashboardOrder(BaseModel):
+    """Заказ для дашборда (кратко)."""
+
+    id: int
+    date: str
+    buyer_name: str
+    status: str
+    items: list[DashboardOrderItem]
+
+
+class DashboardOut(BaseModel):
+    """Данные дашборда: KPI-карточки + последние партии и заказы."""
+
+    # деньги за текущий месяц
+    month_income: float
+    month_expense: float
+    month_balance: float
+
+    # яйцо за текущий месяц
+    egg_collected: int
+    egg_dozens_sold: int
+
+    # активные партии
+    active_batches: int
+    active_heads: int
+
+    # открытые заказы
+    orders_open: int
+
+    # корм на складе, кг (суммарный остаток)
+    feed_stock_kg: float
+
+    recent_batches: list[DashboardBatch]
+    recent_orders: list[DashboardOrder]
