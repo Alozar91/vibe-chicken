@@ -65,12 +65,14 @@ export function Button({
   kind = 'primary',
   type = 'button',
   disabled = false,
+  className = '',
 }: {
   children: ReactNode
   onClick?: () => void
   kind?: 'primary' | 'secondary' | 'danger'
   type?: 'button' | 'submit'
   disabled?: boolean
+  className?: string
 }) {
   const styles = {
     primary: 'bg-amber-500 text-white hover:bg-amber-600',
@@ -82,7 +84,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition disabled:opacity-50 ${styles[kind]}`}
+      className={`rounded-lg px-3 py-1.5 text-sm font-medium transition disabled:opacity-50 ${styles[kind]} ${className}`}
     >
       {children}
     </button>

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { setUiMode } from '../../lib/uiMode'
 
-const navSections: { title: string; items: { to: string; label: string; adminOnly?: boolean }[] }[] = [
+export const navSections: { title: string; items: { to: string; label: string; adminOnly?: boolean }[] }[] = [
   {
     title: 'Справочники',
     items: [
@@ -63,6 +64,15 @@ export default function Layout() {
               className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50"
             >
               Выйти
+            </button>
+            {/* переключение на мобильную версию (для проверки с ПК и для планшетов) */}
+            <button
+              onClick={() => setUiMode('mobile')}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50"
+              title="Мобильная версия"
+              aria-label="Мобильная версия"
+            >
+              📱
             </button>
             {/* бургер для мобильных */}
             <button

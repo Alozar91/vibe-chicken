@@ -1,7 +1,12 @@
 import type { ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/layout/Layout'
+import Responsive from './components/Responsive'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import MobileLayout from './mobile/MobileLayout'
+import MorePage from './mobile/MorePage'
+import MoneyMobile from './mobile/MoneyMobile'
+import OrderDetailMobile from './mobile/OrderDetailMobile'
 import BuyersPage from './pages/dictionaries/BuyersPage'
 import MoneyCategoriesPage from './pages/dictionaries/MoneyCategoriesPage'
 import VendorsPage from './pages/dictionaries/VendorsPage'
@@ -45,11 +50,13 @@ export default function App() {
         <Route
           element={
             <RequireAuth>
-              <Layout />
+              {/* две версии интерфейса: мобильная — по ширине экрана или вручную (lib/uiMode) */}
+              <Responsive desktop={<Layout />} mobile={<MobileLayout />} />
             </RequireAuth>
           }
         >
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/" element={<Responsive desktop={<DashboardPage />} />} />
+          <Route path="/more" element={<MorePage />} />
           <Route path="/dictionaries" element={<Navigate to="/dictionaries/places" replace />} />
           <Route path="/dictionaries/places" element={<PlacesPage />} />
           <Route path="/dictionaries/vendors" element={<VendorsPage />} />
@@ -59,12 +66,12 @@ export default function App() {
           <Route path="/feed" element={<FeedPage />} />
           <Route path="/batches" element={<BatchesPage />} />
           <Route path="/batches/:id" element={<BatchDetailPage />} />
-          <Route path="/money" element={<MoneyPage />} />
+          <Route path="/money" element={<Responsive desktop={<MoneyPage />} mobile={<MoneyMobile />} />} />
           <Route path="/flocks" element={<FlocksPage />} />
           <Route path="/flocks/:id" element={<FlockDetailPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/new" element={<OrderFormPage />} />
-          <Route path="/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/orders/:id" element={<Responsive desktop={<OrderDetailPage />} mobile={<OrderDetailMobile />} />} />
           <Route path="/orders/:id/edit" element={<OrderFormPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
