@@ -70,6 +70,8 @@ class BuyerOut(BuyerIn):
 class ProductTypeIn(BaseModel):
     name: str = Field(max_length=100)
     unit: Literal["pieces", "kg"] = "kg"
+    # цена продажи по умолчанию за единицу вида (₽/шт или ₽/кг по unit)
+    sale_price: float | None = Field(default=None, ge=0)
 
 
 class ProductTypeOut(ProductTypeIn):

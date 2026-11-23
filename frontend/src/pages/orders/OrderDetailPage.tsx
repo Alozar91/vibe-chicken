@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { batchMetrics } from '../../api/broiler'
+import { getPrices } from '../../api/dictionaries'
 import {
   carcassWeight,
   createEggFulfillment,
@@ -157,6 +158,40 @@ export default function OrderDetailPage() {
       setSError(e instanceof Error ? e.message : 'Ошибка сохранения')
     } finally {
       setBusy(false)
+    }
+  }
+
+  // кнопка «Цена из справочника»: подставляет цену за десяток (яйцо) или за кг
+  // (продукция; для тушки — из цены за штуку по среднему весу)
+  const applyDictPrice = async () => {
+    if (!saleItem) return
+    try {
+      const p = await getPrices()
+      if (saleItem.kind === 'egg') {
+        if (p.egg_price_per_ten == null) {
+          setSError('Цена яйца не задана — Настройки → «Цены продукции»')
+          return
+        }
+        setSPriceTen(String(p.egg_price_per_ten))
+      } else {
+        const pt = p.products.find((t) => t.id === saleItem.product_type_id)
+        if (!pt || pt.price == null) {
+          setSError(`Цена «${pt?.name ?? 'вида продукции'}» не задана — Настройки → «Цены продукции»`)
+          return
+        }
+        if (saleItem.unit === 'pieces') {
+          if (!avgKg) {
+            setSError('Средний вес тушки неизвестен — введите цену за кг вручную')
+            return
+          }
+          setSPriceKg((pt.price / avgKg).toFixed(2))
+        } else {
+          setSPriceKg(String(pt.price))
+        }
+      }
+      setSError(null)
+    } catch (e) {
+      setSError(e instanceof Error ? e.message : 'Ошибка загрузки справочника')
     }
   }
 
@@ -344,7 +379,12 @@ export default function OrderDetailPage() {
           <div className="space-y-3">
             <DateInput value={sDate} onChange={setSDate} />
             <TextInput value={sDozens} onChange={setSDozens} placeholder="десятков (факт)" required />
-            <TextInput value={sPriceTen} onChange={setSPriceTen} placeholder="цена за десяток" required />
+            <div className="flex items-start gap-2">
+              <TextInput value={sPriceTen} onChange={setSPriceTen} placeholder="цена за десяток" required />
+              <Button kind="secondary" onClick={() => void applyDictPrice()}>
+                из справочника
+              </Button>
+            </div>
             <p className="text-xs text-slate-400">
               Покупатель — {order.buyer.name} (из заказа). Доход попадёт в журнал денег автоматически.
             </p>
@@ -364,7 +404,12 @@ export default function OrderDetailPage() {
             />
             <TextInput value={sKg} onChange={setSKg} placeholder="вес, кг (факт)" required />
             <div>
-              <TextInput value={sPriceKg} onChange={setSPriceKg} placeholder="цена за кг" required />
+              <div className="flex items-start gap-2">
+                <TextInput value={sPriceKg} onChange={setSPriceKg} placeholder="цена за кг" required />
+                <Button kind="secondary" onClick={() => void applyDictPrice()}>
+                  из справочника
+                </Button>
+              </div>
               {saleItem?.unit === 'pieces' && avgKg && sPriceKg.trim() !== '' && !Number.isNaN(Number(sPriceKg.replace(',', '.'))) && (
                 <p className="mt-1 text-xs text-slate-400">
                   ≈ {fmt(Number(sPriceKg.replace(',', '.')) * avgKg)} ₽/шт при среднем весе тушки {avgKg.toFixed(2)} кг

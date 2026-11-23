@@ -10,6 +10,7 @@ import type {
   Place,
   PlaceKind,
   ProductType,
+  Prices,
   Vendor,
   VendorType,
 } from './types'
@@ -62,13 +63,19 @@ export const deleteBuyer = (id: number) =>
 
 // --- Виды продукции ---
 export const listProductTypes = () => api<ProductType[]>('/api/dictionaries/product-types')
-export const createProductType = (name: string, unit: string) =>
-  api<ProductType>('/api/dictionaries/product-types', { method: 'POST', body: JSON.stringify({ name, unit }) })
-export const updateProductType = (id: number, name: string, unit: string) =>
+export const createProductType = (name: string, unit: string, salePrice: number | null) =>
+  api<ProductType>('/api/dictionaries/product-types', {
+    method: 'POST',
+    body: JSON.stringify({ name, unit, sale_price: salePrice }),
+  })
+export const updateProductType = (id: number, name: string, unit: string, salePrice: number | null) =>
   api<ProductType>(`/api/dictionaries/product-types/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ name, unit }),
+    body: JSON.stringify({ name, unit, sale_price: salePrice }),
   })
+
+/** Справочник цен: яйцо (₽/дес) + виды продукции (₽/шт или ₽/кг). */
+export const getPrices = () => api<Prices>('/api/dictionaries/prices')
 export const deleteProductType = (id: number) =>
   api<void>(`/api/dictionaries/product-types/${id}`, { method: 'DELETE' })
 

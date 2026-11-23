@@ -11,7 +11,8 @@ import {
   listSales,
   listSlaughters,
 } from '../../api/broiler'
-import { listBuyers, listProductTypes } from '../../api/dictionaries'
+import { getPrices, listBuyers, listProductTypes } from '../../api/dictionaries'
+import { carcassWeight } from '../../api/orders'
 import { listSettings } from '../../api/settings'
 import { Button, Card, Checkbox, DateInput, ErrorBox, Modal, TextInput } from '../../components/ui'
 import { Select } from '../../components/ui'
@@ -239,6 +240,7 @@ export function SalesSection({ batchId, onChanged }: Props) {
   const [kg, setKg] = useState('')
   const [price, setPrice] = useState('')
   const [buyerId, setBuyerId] = useState('')
+  const [typeHint, setTypeHint] = useState<string | null>(null)
   const [useCustom, setUseCustom] = useState(false)
   const [customAmount, setCustomAmount] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -259,10 +261,39 @@ export function SalesSection({ batchId, onChanged }: Props) {
     id === null ? '' : buyers.find((b) => b.id === id)?.name ?? `#${id}`
   const typeName = (id: number) => types.find((t) => t.id === id)?.name ?? `#${id}`
 
+  // кнопка «Цена из справочника»: цена вида за его единицу (₽/кг или ₽/шт);
+  // для поштучных (тушка) пересчитываем в ₽/кг по среднему весу тушки
+  const applyDictPrice = async () => {
+    setError(null)
+    try {
+      const p = await getPrices()
+      const pt = p.products.find((t) => t.id === Number(typeId))
+      if (!pt || pt.price == null) {
+        setTypeHint(`Цена «${pt?.name ?? 'вида'}» не задана — Настройки → «Цены продукции»`)
+        return
+      }
+      if (pt.unit === 'pieces') {
+        const cw = await carcassWeight()
+        if (cw.avg_kg == null) {
+          setTypeHint('Средний вес тушки неизвестен — введите цену за кг вручную')
+          return
+        }
+        setPrice((pt.price / cw.avg_kg).toFixed(2))
+        setTypeHint(`В справочнике ${pt.price} ₽/шт → ${(pt.price / cw.avg_kg).toFixed(2)} ₽/кг при среднем весе ${cw.avg_kg.toFixed(2)} кг`)
+      } else {
+        setPrice(String(pt.price))
+        setTypeHint(null)
+      }
+    } catch (e) {
+      setTypeHint(e instanceof Error ? e.message : 'Ошибка загрузки справочника')
+    }
+  }
+
   const openModal = () => {
     setEditingId(null)
     setDate(today())
     setTypeId(types[0]?.id.toString() ?? '')
+    setTypeHint(null)
     setKg('')
     setPrice('')
     setBuyerId('')
@@ -278,6 +309,7 @@ export function SalesSection({ batchId, onChanged }: Props) {
     setTypeId(String(sale.product_type_id))
     setKg(String(sale.product_kg))
     setPrice(String(sale.price_per_kg))
+    setTypeHint(null)
     setBuyerId(sale.buyer_id ? String(sale.buyer_id) : '')
     const hasCustom = Math.abs(sale.total_amount - sale.product_kg * sale.price_per_kg) > 0.005
     setUseCustom(hasCustom)
@@ -367,8 +399,14 @@ export function SalesSection({ batchId, onChanged }: Props) {
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <TextInput value={kg} onChange={setKg} placeholder="Кг" required />
-            <TextInput value={price} onChange={setPrice} placeholder="Цена за кг, ₽" required />
+            <div className="flex items-start gap-2">
+              <TextInput value={price} onChange={setPrice} placeholder="Цена за кг, ₽" required />
+              <Button kind="secondary" onClick={() => void applyDictPrice()}>
+                из справочника
+              </Button>
+            </div>
           </div>
+          {typeHint && <p className="text-xs text-slate-400">{typeHint}</p>}
           <Select
             value={buyerId}
             onChange={setBuyerId}

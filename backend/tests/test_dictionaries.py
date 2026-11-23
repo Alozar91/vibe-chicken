@@ -66,3 +66,30 @@ def test_vendor_types_editable(db):
         db, vendor.id, VendorIn(name="Птицефабрика", note="ошибка исправлена", types=["chicks", "feed"])
     )
     assert sorted(updated.types) == ["chicks", "feed"]
+
+def test_product_type_sale_price_and_prices_endpoint(db):
+    """sale_price хранится у вида продукции; get_prices отдаёт цены + цену яйца."""
+    from app.schemas.dictionaries import ProductTypeIn
+    from app.services import settings as settings_svc
+
+    svc.create_product_type(db, ProductTypeIn(name="Тушка", unit="pieces", sale_price=350))
+    svc.create_product_type(db, ProductTypeIn(name="Печень", unit="kg", sale_price=None))
+
+    prices = svc.get_prices(db)
+    by_name = {p["name"]: p for p in prices["products"]}
+    assert by_name["Тушка"]["price"] == 350
+    assert by_name["Тушка"]["unit"] == "pieces"
+    assert by_name["Печень"]["price"] is None
+    assert prices["egg_price_per_ten"] is None  # не задана
+
+    # цена яйца — через настройки
+    settings_svc.set_value(db, "egg_price_per_ten", "60,5")
+    prices = svc.get_prices(db)
+    assert prices["egg_price_per_ten"] == 60.5
+
+    # обновление цены вида продукции
+    tushka_id = by_name["Тушка"]["id"]
+    updated = svc.update_product_type(
+        db, tushka_id, ProductTypeIn(name="Тушка", unit="pieces", sale_price=380)
+    )
+    assert updated.sale_price == 380

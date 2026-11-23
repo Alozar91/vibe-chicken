@@ -208,7 +208,7 @@ def list_product_types(db: Session) -> list[ProductType]:
 
 def create_product_type(db: Session, data: ProductTypeIn) -> ProductType:
     _check_unique(db, ProductType, data.name)
-    obj = ProductType(name=data.name, unit=data.unit)
+    obj = ProductType(name=data.name, unit=data.unit, sale_price=data.sale_price)
     db.add(obj)
     db.commit()
     return obj
@@ -219,6 +219,7 @@ def update_product_type(db: Session, obj_id: int, data: ProductTypeIn) -> Produc
     _check_unique(db, ProductType, data.name, exclude_id=obj_id)
     obj.name = data.name
     obj.unit = data.unit
+    obj.sale_price = data.sale_price
     db.commit()
     return obj
 
@@ -255,3 +256,24 @@ def deactivate_money_category(db: Session, obj_id: int) -> None:
     obj = _get_or_404(db, MoneyCategory, obj_id)
     obj.is_active = False
     db.commit()
+
+def get_prices(db: Session) -> dict:
+    """Справочник цен для кнопки «Цена из справочника» в формах продаж.
+
+    Возвращает цену яйца (₽/десяток, из настроек; None — не задана) и цены
+    видов продукции (₽ за единицу вида: шт или кг).
+    """
+    from app.services import settings as settings_svc
+
+    egg_raw = settings_svc.get_value(db, "egg_price_per_ten")
+    egg = float(egg_raw) if egg_raw else None
+    products = [
+        {
+            "id": pt.id,
+            "name": pt.name,
+            "unit": pt.unit,
+            "price": pt.sale_price,
+        }
+        for pt in db.scalars(select(ProductType).order_by(ProductType.name)).all()
+    ]
+    return {"egg_price_per_ten": egg, "products": products}

@@ -149,6 +149,12 @@ def delete_buyer(obj_id: int, db: Session = Depends(get_db)):
 
 
 # --- Виды продукции ---
+@router.get("/prices")
+def get_prices(db: Session = Depends(get_db)):
+    """Справочник цен: яйцо (₽/дес) + виды продукции (₽/шт или ₽/кг)."""
+    return _handle(svc.get_prices, db)
+
+
 @router.get("/product-types", response_model=list[ProductTypeOut])
 def product_types(db: Session = Depends(get_db)):
     return svc.list_product_types(db)
