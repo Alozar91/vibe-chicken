@@ -184,6 +184,35 @@ def _metrics(db: Session, order: Order) -> list[OrderMetrics]:
     return rows
 
 
+def _fulfillment_out(db: Session, f: OrderFulfillment) -> OrderFulfillmentOut:
+    """OrderFulfillmentOut с датой/ценой/суммой связанной продажи.
+
+    Нужен и в деталях заказа, и в ответах на создание продажи — иначе
+    ResponseValidationError (у ORM-объекта нет sale_date/price/amount).
+    """
+    if f.sale_kind == "egg_sale":
+        sale = db.get(EggSale, f.egg_sale_id)
+        price = float(sale.price_per_ten) if sale else 0.0
+    else:
+        sale = db.get(BatchSale, f.batch_sale_id)
+        price = float(sale.price_per_kg) if sale else 0.0
+    if sale is None:  # продажа удалена в обход API — связь не показываем
+        raise ValueError("Запись не найдена")
+    return OrderFulfillmentOut(
+        id=f.id,
+        item_id=f.item_id,
+        sale_kind=f.sale_kind,
+        egg_sale_id=f.egg_sale_id,
+        batch_sale_id=f.batch_sale_id,
+        actual_qty=f.actual_qty,
+        unit=f.unit,
+        created_at=f.created_at,
+        sale_date=sale.date,
+        price=price,
+        amount=float(sale.total_amount),
+    )
+
+
 def _to_detail(db: Session, order: Order) -> OrderDetailOut:
     rows = list(
         db.scalars(
@@ -194,28 +223,10 @@ def _to_detail(db: Session, order: Order) -> OrderDetailOut:
     )
     fulfillments: list[OrderFulfillmentOut] = []
     for f in rows:
-        # дата/цена/сумма берём из самой продажи (яйцо или продукция партии)
-        if f.sale_kind == "egg_sale":
-            sale = db.get(EggSale, f.egg_sale_id)
-        else:
-            sale = db.get(BatchSale, f.batch_sale_id)
-        if sale is None:  # продажа удалена в обход API — связь не показываем
-            continue
-        fulfillments.append(
-            OrderFulfillmentOut(
-                id=f.id,
-                item_id=f.item_id,
-                sale_kind=f.sale_kind,
-                egg_sale_id=f.egg_sale_id,
-                batch_sale_id=f.batch_sale_id,
-                actual_qty=f.actual_qty,
-                unit=f.unit,
-                created_at=f.created_at,
-                sale_date=sale.date,
-                price=float(sale.price_per_ten if f.sale_kind == "egg_sale" else sale.price_per_kg),
-                amount=float(sale.total_amount),
-            )
-        )
+        try:
+            fulfillments.append(_fulfillment_out(db, f))
+        except ValueError:
+            continue  # продажа удалена в обход API — связь не показываем
     return OrderDetailOut(
         id=order.id,
         date=order.date,
@@ -280,7 +291,7 @@ def create_egg_fulfillment(db: Session, order_id: int, item_id: int, data: EggSa
     db.add(f)
     _recompute_status(db, order)
     db.commit()
-    return f
+    return _fulfillment_out(db, f)
 
 
 def create_product_fulfillment(
@@ -330,7 +341,7 @@ def create_product_fulfillment(
     db.add(f)
     _recompute_status(db, order)
     db.commit()
-    return f
+    return _fulfillment_out(db, f)
 
 
 def delete_fulfillment(db: Session, order_id: int, f_id: int) -> None:

@@ -176,3 +176,22 @@ def test_delete_fulfillment(db, env, buyer_id):
     assert detail.fulfillments == []
     assert detail.metrics[0].fulfilled_qty == 0
     assert layers_svc.list_sales(db) == []
+
+def test_fulfillment_out_has_sale_data(db, env, buyer_id, batch_id):
+    """Регрессия 500: create-эндпоинты возвращают sale_date/price/amount
+    (response_model=OrderFulfillmentOut требует их с версии с суммами продаж)."""
+    order = svc.create_order(db, _order_in(env, buyer_id=buyer_id))
+    f = svc.create_egg_fulfillment(
+        db, order.id, order.items[0].id, EggSaleIn(date=D, dozens=5, price_per_ten=60)
+    )
+    assert f.sale_date == D
+    assert f.price == 60
+    assert f.amount == 300
+
+    f2 = svc.create_product_fulfillment(
+        db, order.id, order.items[1].id, batch_id,
+        OrderProductSaleIn(date=D, product_kg=2, price_per_kg=100),
+    )
+    assert f2.sale_date == D
+    assert f2.price == 100
+    assert f2.amount == 200
