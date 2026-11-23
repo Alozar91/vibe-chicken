@@ -71,15 +71,15 @@ export const deleteProductType = (id: number) =>
 
 // --- Категории денег ---
 export const listMoneyCategories = () => api<MoneyCategory[]>('/api/dictionaries/money-categories')
-export const createMoneyCategory = (name: string, kind: MoneyKind) =>
+export const createMoneyCategory = (name: string, kind: MoneyKind, isGeneral = false) =>
   api<MoneyCategory>('/api/dictionaries/money-categories', {
     method: 'POST',
-    body: JSON.stringify({ name, kind }),
+    body: JSON.stringify({ name, kind, is_general: isGeneral }),
   })
-export const updateMoneyCategory = (id: number, name: string, kind: MoneyKind) =>
+export const updateMoneyCategory = (id: number, name: string, kind: MoneyKind, isGeneral = false) =>
   api<MoneyCategory>(`/api/dictionaries/money-categories/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ name, kind }),
+    body: JSON.stringify({ name, kind, is_general: isGeneral }),
   })
 export const deactivateMoneyCategory = (id: number) =>
   api<void>(`/api/dictionaries/money-categories/${id}`, { method: 'DELETE' })

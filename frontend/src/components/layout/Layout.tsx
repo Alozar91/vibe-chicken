@@ -16,6 +16,7 @@ const navSections: { title: string; items: { to: string; label: string }[] }[] =
   {
     title: 'Учёт',
     items: [
+      { to: '/money', label: 'Журнал денег' },
       { to: '/feed', label: 'Склад корма' },
       { to: '/batches', label: 'Партии бройлеров' },
       { to: '/settings', label: 'Настройки' },

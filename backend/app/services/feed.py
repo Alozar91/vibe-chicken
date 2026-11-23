@@ -14,6 +14,7 @@ from app.models.broiler import BatchFeeding
 from app.models.dictionaries import FeedBrand, FeedCategory, Vendor
 from app.models.layers import LayFeeding
 from app.models.warehouse import FeedAdjustment, FeedPurchase
+from app.services import money as money_svc
 from app.schemas.feed import FeedAdjustmentIn, FeedPurchaseIn, FeedStockRow
 
 
@@ -50,6 +51,17 @@ def create_purchase(db: Session, data: FeedPurchaseIn) -> FeedPurchase:
     _check_dict_refs(db, data.feed_category_id, data.feed_brand_id)
     obj = FeedPurchase(**data.model_dump())
     db.add(obj)
+    db.flush()
+    money_cat = money_svc.find_category(db, "expense", ["Корм"])
+    if money_cat is not None and data.total_cost > 0:
+        feed_cat = db.get(FeedCategory, data.feed_category_id)
+        brand = db.get(FeedBrand, data.feed_brand_id)
+        money_svc.create_auto_transaction(
+            db, date_=data.date, category=money_cat, amount=data.total_cost,
+            description=f"Закупка корма: {feed_cat.name if feed_cat else ''} "
+                        f"{brand.name if brand else ''}, {data.kg} кг",
+            source_type="purchase", source_id=obj.id,
+        )
     db.commit()
     return obj
 
@@ -59,6 +71,10 @@ def delete_purchase(db: Session, purchase_id: int) -> None:
     obj = db.get(FeedPurchase, purchase_id)
     if obj is None:
         raise ValueError("Закупка не найдена")
+    money_svc.sync_auto_transaction(
+        db, source_type="purchase", source_id=purchase_id,
+        date_=obj.date, category=None, amount=0, description=None,
+    )
     db.delete(obj)
     try:
         db.commit()

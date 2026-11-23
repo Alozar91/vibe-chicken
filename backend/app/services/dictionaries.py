@@ -244,6 +244,7 @@ def update_money_category(db: Session, obj_id: int, data: MoneyCategoryIn) -> Mo
     obj = _get_or_404(db, MoneyCategory, obj_id)
     obj.name = data.name
     obj.kind = data.kind
+    obj.is_general = data.is_general
     db.commit()
     return obj
 

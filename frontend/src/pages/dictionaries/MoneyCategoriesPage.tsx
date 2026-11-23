@@ -24,6 +24,7 @@ export default function MoneyCategoriesPage() {
   const [editing, setEditing] = useState<MoneyCategory | null>(null)
   const [name, setName] = useState('')
   const [kind, setKind] = useState<MoneyKind>('expense')
+  const [isGeneral, setIsGeneral] = useState(false)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -44,6 +45,7 @@ export default function MoneyCategoriesPage() {
     setEditing(null)
     setName('')
     setKind('expense')
+    setIsGeneral(false)
     setFormError(null)
     setModalOpen(true)
   }
@@ -52,6 +54,7 @@ export default function MoneyCategoriesPage() {
     setEditing(m)
     setName(m.name)
     setKind(m.kind)
+    setIsGeneral(m.is_general ?? false)
     setFormError(null)
     setModalOpen(true)
   }
@@ -65,8 +68,8 @@ export default function MoneyCategoriesPage() {
     if (!name.trim()) return
     setBusy(true)
     try {
-      if (editing === null) await createMoneyCategory(name.trim(), kind)
-      else await updateMoneyCategory(editing.id, name.trim(), kind)
+      if (editing === null) await createMoneyCategory(name.trim(), kind, isGeneral)
+      else await updateMoneyCategory(editing.id, name.trim(), kind, isGeneral)
       setItems(await listMoneyCategories())
       setError(null)
       close()
@@ -112,6 +115,11 @@ export default function MoneyCategoriesPage() {
               <span className={`rounded-full px-2 py-0.5 text-xs ${KIND_STYLES[m.kind]}`}>
                 {m.kind === 'income' ? 'Доход' : 'Расход'}
               </span>
+              {m.is_general && (
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                  общая
+                </span>
+              )}
               {!m.is_active && (
                 <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-500">
                   выключена
@@ -152,6 +160,17 @@ export default function MoneyCategoriesPage() {
           <div className="w-full sm:w-56">
             <Select value={kind} onChange={setKind} options={MONEY_KINDS} />
           </div>
+          {kind === 'expense' && (
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={isGeneral}
+                onChange={(e) => setIsGeneral(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Общая (распределяется по кура-дням)
+            </label>
+          )}
           <div className="flex gap-2 pt-1">
             <Button type="submit" disabled={busy}>
               Сохранить

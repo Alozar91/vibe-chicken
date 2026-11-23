@@ -22,6 +22,7 @@ from app.models.broiler import (
 from app.models.dictionaries import Buyer, FeedBrand, FeedCategory, Place, ProductType, Vendor
 from app.models.dictionaries import MoneyCategory
 from app.models.warehouse import MoneyTransaction
+from app.services import money as money_svc
 from app.schemas.broiler import (
     BatchIn,
     BatchMetrics,
@@ -33,6 +34,7 @@ from app.schemas.broiler import (
     WeighingIn,
 )
 from app.services import settings as settings_svc
+from app.services import money as money_svc
 
 # константы — русский текст для вывода «нет данных» решает UI; тут только None
 
@@ -95,13 +97,11 @@ def create_batch(db: Session, data: BatchIn) -> BroilerBatch:
         select(MoneyCategory).where(MoneyCategory.kind == "expense", MoneyCategory.name == "Цыплята")
     )
     if money_cat is not None and chick_cost > 0:
-        db.add(MoneyTransaction(
-            date=data.start_date,
-            money_category_id=money_cat.id,
-            amount=chick_cost,
+        money_svc.create_auto_transaction(
+            db, date_=data.start_date, category=money_cat, amount=chick_cost,
             description=f"Закупка цыплят, партия {data.code}",
-            batch_id=batch.id,
-        ))
+            source_type="chicks", source_id=batch.id, batch_id=batch.id,
+        )
     db.commit()
     return batch
 
@@ -156,21 +156,15 @@ def update_batch(db: Session, batch_id: int, data: BatchIn) -> BroilerBatch:
         tx = db.scalar(select(MoneyTransaction).where(
             MoneyTransaction.batch_id == batch_id,
             MoneyTransaction.money_category_id == money_cat.id))
-    if tx is not None:
-        if chick_cost > 0:
-            tx.date = data.start_date
-            tx.amount = chick_cost
-            tx.description = f"Закупка цыплят, партия {data.code}"
-        else:
-            db.delete(tx)
-    elif money_cat is not None and chick_cost > 0:
-        db.add(MoneyTransaction(
-            date=data.start_date,
-            money_category_id=money_cat.id,
-            amount=chick_cost,
-            description=f"Закупка цыплят, партия {data.code}",
-            batch_id=batch.id,
-        ))
+    if chick_cost > 0 and money_cat is None:
+        money_cat = db.scalar(
+            select(MoneyCategory).where(MoneyCategory.kind == "expense", MoneyCategory.name == "Цыплята"))
+    money_svc.sync_auto_transaction(
+        db, source_type="chicks", source_id=batch_id,
+        date_=data.start_date, category=money_cat if chick_cost > 0 else None,
+        amount=chick_cost, description=f"Закупка цыплят, партия {data.code}",
+        batch_id=batch_id,
+    )
     db.commit()
     return batch
 
@@ -331,18 +325,32 @@ def create_treatment(db: Session, batch_id: int, data: TreatmentIn) -> BatchTrea
     _check_event_date(db, batch, data.date)
     obj = BatchTreatment(batch_id=batch_id, **data.model_dump())
     db.add(obj)
+    db.flush()
+    money_cat = money_svc.find_category(db, "expense", ["Лечение", "Медикаменты", "Ветпрепараты"])
+    if money_cat is not None and data.cost > 0:
+        money_svc.create_auto_transaction(
+            db, date_=data.date, category=money_cat, amount=data.cost,
+            description=f"Лечение: {data.description}",
+            source_type="treatment", source_id=obj.id, batch_id=batch_id,
+        )
     db.commit()
     return obj
 
 
 def update_treatment(db: Session, batch_id: int, obj_id: int, data: TreatmentIn) -> BatchTreatment:
-    _get_batch(db, batch_id)
+    batch = _get_batch(db, batch_id)
     obj = db.get(BatchTreatment, obj_id)
     if obj is None or obj.batch_id != batch_id:
         raise ValueError("Запись не найдена")
     _check_event_date(db, batch, data.date)
     for k, v in data.model_dump().items():
         setattr(obj, k, v)
+    money_cat = money_svc.find_category(db, "expense", ["Лечение", "Медикаменты", "Ветпрепараты"])
+    money_svc.sync_auto_transaction(
+        db, source_type="treatment", source_id=obj.id,
+        date_=data.date, category=money_cat if data.cost > 0 else None,
+        amount=data.cost, description=f"Лечение: {data.description}", batch_id=batch_id,
+    )
     db.commit()
     return obj
 
@@ -352,6 +360,10 @@ def delete_treatment(db: Session, batch_id: int, obj_id: int) -> None:
     obj = db.get(BatchTreatment, obj_id)
     if obj is None or obj.batch_id != batch_id:
         raise ValueError("Запись не найдена")
+    money_svc.sync_auto_transaction(
+        db, source_type="treatment", source_id=obj.id,
+        date_=obj.date, category=None, amount=0, description=None, batch_id=batch_id,
+    )
     db.delete(obj)
     db.commit()
 
@@ -505,6 +517,17 @@ def list_sales(db: Session, batch_id: int) -> list[BatchSale]:
         select(BatchSale).where(BatchSale.batch_id == batch_id).order_by(BatchSale.date)))
 
 
+def _sync_sale_money(db: Session, batch_id: int, obj: BatchSale) -> None:
+    """Доход по продаже: категория «Продажа продукции»/«Продажа» (если есть)."""
+    money_cat = money_svc.find_category(db, "income", ["Продажа продукции", "Продажа"])
+    money_svc.sync_auto_transaction(
+        db, source_type="sale", source_id=obj.id,
+        date_=obj.date, category=money_cat, amount=float(obj.total_amount),
+        description=f"Продажа продукции",
+        batch_id=batch_id,
+    )
+
+
 def create_sale(db: Session, batch_id: int, data: SaleIn) -> BatchSale:
     batch = _get_batch(db, batch_id)
     if db.get(ProductType, data.product_type_id) is None:
@@ -531,6 +554,8 @@ def create_sale(db: Session, batch_id: int, data: SaleIn) -> BatchSale:
         buyer_id=data.buyer_id, total_amount=round(amount, 2),
     )
     db.add(obj)
+    db.flush()
+    _sync_sale_money(db, batch_id, obj)
     db.commit()
     return obj
 
@@ -558,6 +583,7 @@ def update_sale(db: Session, batch_id: int, obj_id: int, data: SaleIn) -> BatchS
     for k, v in data.model_dump().items():
         setattr(obj, k, v)
     obj.total_amount = round(amount, 2)
+    _sync_sale_money(db, batch_id, obj)
     db.commit()
     return obj
 
@@ -567,6 +593,10 @@ def delete_sale(db: Session, batch_id: int, obj_id: int) -> None:
     obj = db.get(BatchSale, obj_id)
     if obj is None or obj.batch_id != batch_id:
         raise ValueError("Запись не найдена")
+    money_svc.sync_auto_transaction(
+        db, source_type="sale", source_id=obj.id,
+        date_=obj.date, category=None, amount=0, description=None, batch_id=batch_id,
+    )
     db.delete(obj)
     db.commit()
 
@@ -624,12 +654,20 @@ def compute_metrics(db: Session, batch_id: int) -> BatchMetrics:
 
     output_pct = round(output_kg / live_weight * 100, 1) if live_weight > 0 else None
 
-    direct_costs = round(float(batch.chick_price_per_head) * batch.head_count + treatment_cost, 2)
+    # прямые: цыплята + лечение + расходы, привязанные к партии напрямую (§4.4)
+    linked_cost = float(db.scalar(
+        select(func.coalesce(func.sum(MoneyTransaction.amount), 0))
+        .join(MoneyCategory, MoneyTransaction.money_category_id == MoneyCategory.id)
+        .where(MoneyTransaction.batch_id == batch_id, MoneyCategory.kind == "expense",
+               MoneyCategory.is_general == True)) or 0)  # noqa: E712
+    direct_costs = round(
+        float(batch.chick_price_per_head) * batch.head_count + treatment_cost + linked_cost, 2)
     # стоимость корма списывается со склада по партиям; при наличии закупок средняя
     # цена кг корма вычисляется на уровне отчётов (позже); в прямые затраты партии
     # пока включаем цыплят и лечение — корм добавим в отчёте экономики.
 
-    profit = round(revenue - direct_costs, 2) if sales else None
+    shared_costs = money_svc.general_expense_share(db, batch)
+    profit = round(revenue - direct_costs - shared_costs, 2) if sales else None
 
     return BatchMetrics(
         current_head=current_head,
@@ -642,6 +680,7 @@ def compute_metrics(db: Session, batch_id: int) -> BatchMetrics:
         output_kg=output_kg,
         output_pct=output_pct,
         direct_costs=direct_costs,
+        shared_costs=shared_costs,
         revenue=revenue,
         profit=profit,
     )

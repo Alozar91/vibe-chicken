@@ -79,6 +79,7 @@ class ProductTypeOut(ProductTypeIn):
 class MoneyCategoryIn(BaseModel):
     name: str = Field(max_length=100)
     kind: str = Field(pattern="^(income|expense)$")
+    is_general: bool = False
 
 
 class MoneyCategoryOut(MoneyCategoryIn):

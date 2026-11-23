@@ -13,6 +13,7 @@ from app.core.security import hash_password
 from app.models.user import User
 from app.routers import auth, broiler, dictionaries, feed, health
 from app.routers import settings as settings_router
+from app.routers import money as money_router
 
 
 @asynccontextmanager
@@ -54,3 +55,4 @@ app.include_router(dictionaries.router)
 app.include_router(feed.router)
 app.include_router(broiler.router)
 app.include_router(settings_router.router)
+app.include_router(money_router.router)
