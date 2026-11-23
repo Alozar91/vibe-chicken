@@ -8,6 +8,8 @@ import VendorsPage from './pages/dictionaries/VendorsPage'
 import PlacesPage from './pages/dictionaries/PlacesPage'
 import FeedDictsPage from './pages/dictionaries/FeedDictsPage'
 import FeedPage from './pages/feed/FeedPage'
+import BatchesPage from './pages/broiler/BatchesPage'
+import BatchDetailPage from './pages/broiler/BatchDetailPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 
@@ -45,6 +47,8 @@ export default function App() {
           <Route path="/dictionaries/feed" element={<FeedDictsPage />} />
           <Route path="/dictionaries/money-categories" element={<MoneyCategoriesPage />} />
           <Route path="/feed" element={<FeedPage />} />
+          <Route path="/batches" element={<BatchesPage />} />
+          <Route path="/batches/:id" element={<BatchDetailPage />} />
         </Route>
       </Routes>
     </AuthProvider>
