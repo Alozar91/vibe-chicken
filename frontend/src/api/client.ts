@@ -8,13 +8,16 @@ export class ApiError extends Error {
 }
 
 /**
- * Базовый клиент API: куки сессии отправляются автоматически (credentials),
- * в dev-режиме /api проксируется Vite на FastAPI.
+ * Базовый клиент API: куки сессии отправляются автоматически (credentials).
+ * Пути собираются от import.meta.env.BASE_URL: в dev это «/» (/api проксируется
+ * Vite на FastAPI), в проде — «/chicken/» (сборка с BASE_PATH, docs/deploy.md).
  */
+const API_BASE = import.meta.env.BASE_URL
+
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const { headers = {}, ...rest } = options
 
-  const res = await fetch(path, {
+  const res = await fetch(`${API_BASE}${path.replace(/^\//, '')}`, {
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', ...headers },
     ...rest,
@@ -25,7 +28,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
 
     // Сессия истекла — отправляем на логин (кроме самих auth-запросов)
     if (res.status === 401 && !path.startsWith('/api/auth')) {
-      window.location.href = '/login'
+      window.location.href = `${API_BASE}login`
     }
 
     throw new ApiError(res.status, data?.detail ?? `Ошибка запроса (${res.status})`)

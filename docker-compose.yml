@@ -1,0 +1,38 @@
+# Vibe Chicken: бэкенд (FastAPI/SQLite) + фронтенд (nginx со статикой и /api).
+# Наружу выставлен только фронтенд; системный nginx с SSL проксирует на него
+# location /chicken (сниппет: deploy/nginx-system.conf.example, детали: docs/deploy.md).
+#
+# Переменные читаются из файла .env в корне проекта (образец: deploy/.env.example).
+
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      # Кука сессии только по https — трафик идёт через системный nginx с SSL
+      CHICKEN_SESSION_HTTPS_ONLY: ${CHICKEN_SESSION_HTTPS_ONLY:-true}
+      # Администратор создаётся только при первом запуске (пустая БД)
+      CHICKEN_ADMIN_USERNAME: ${CHICKEN_ADMIN_USERNAME:-admin}
+      CHICKEN_ADMIN_PASSWORD: ${CHICKEN_ADMIN_PASSWORD:?Задайте CHICKEN_ADMIN_PASSWORD в .env (deploy/.env.example)}
+      # Ключ подписи сессий; если пуст — сгенерируется и сохранится в volume
+      CHICKEN_SECRET_KEY: ${CHICKEN_SECRET_KEY:-}
+    volumes:
+      - chicken-data:/app/data # БД, бэкапы, secret.key
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${CHICKEN_PORT:-8080}:80" # сюда смотрит системный nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  chicken-data:
