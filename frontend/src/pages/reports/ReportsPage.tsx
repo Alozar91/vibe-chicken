@@ -140,7 +140,7 @@ export default function ReportsPage() {
           )}
         </Card>
 
-        <Card>
+        <Card className="xl:col-span-2">
           <h3 className="mb-2 font-semibold text-slate-900">Продажи по покупателям</h3>
           {buyers.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-400">Пока нет продаж</p>
@@ -149,7 +149,7 @@ export default function ReportsPage() {
           )}
         </Card>
 
-        <Card>
+        <Card className="xl:col-span-2">
           <h3 className="mb-2 font-semibold text-slate-900">Сравнение партий</h3>
           {batches.length === 0 ? (
             <p className="py-10 text-center text-sm text-slate-400">Пока нет партий</p>
