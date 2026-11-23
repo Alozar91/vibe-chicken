@@ -110,6 +110,27 @@ export function TextInput({
   )
 }
 
+/** Поле ввода даты: нативный календарь, отображение дд.мм.гггг. */
+export function DateInput({
+  value,
+  onChange,
+  required = false,
+}: {
+  value: string
+  onChange: (v: string) => void
+  required?: boolean
+}) {
+  return (
+    <input
+      type="date"
+      value={value}
+      required={required}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 focus:outline-none"
+    />
+  )
+}
+
 export function Select<T extends string>({
   value,
   onChange,

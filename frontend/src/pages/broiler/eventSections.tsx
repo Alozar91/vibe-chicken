@@ -23,7 +23,7 @@ import {
   listWeighings,
 } from '../../api/broiler'
 import { listFeedBrands, listFeedCategories } from '../../api/dictionaries'
-import { Button, Card, ErrorBox, Modal, TextInput } from '../../components/ui'
+import { Button, Card, DateInput, ErrorBox, Modal, TextInput } from '../../components/ui'
 import { Select } from '../../components/ui'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -193,7 +193,7 @@ function MortalityFields({ date, setDate, heads, setHeads, cause, setCause, onPa
   }, [date, heads, cause, onPayload])
   return (
     <>
-      <TextInput value={date} onChange={setDate} placeholder="Дата" />
+      <DateInput value={date} onChange={setDate} required />
       <TextInput value={heads} onChange={setHeads} placeholder="Голов" required />
       <TextInput value={cause} onChange={setCause} placeholder="Причина (необязательно)" />
     </>
@@ -269,7 +269,7 @@ function FeedingFields({ date, setDate, cat, setCat, brand, setBrand, kg, setKg,
   }, [date, cat, brand, kg, onPayload])
   return (
     <>
-      <TextInput value={date} onChange={setDate} placeholder="Дата" />
+      <DateInput value={date} onChange={setDate} required />
       <Select value={cat} onChange={setCat} options={cats.map((c) => ({ value: c.id.toString(), label: c.name }))} />
       <Select value={brand} onChange={setBrand} options={brands.map((b) => ({ value: b.id.toString(), label: b.name }))} />
       <TextInput value={kg} onChange={setKg} placeholder="Кг" required />
@@ -327,7 +327,7 @@ function WeighingFields({ date, setDate, heads, setHeads, avg, setAvg, onPayload
   }, [date, heads, avg, onPayload])
   return (
     <>
-      <TextInput value={date} onChange={setDate} placeholder="Дата" />
+      <DateInput value={date} onChange={setDate} required />
       <TextInput value={heads} onChange={setHeads} placeholder="Голов в выборке" required />
       <TextInput value={avg} onChange={setAvg} placeholder="Средний вес, кг" required />
     </>
@@ -384,7 +384,7 @@ function TreatmentFields({ date, setDate, desc, setDesc, cost, setCost, onPayloa
   }, [date, desc, cost, onPayload])
   return (
     <>
-      <TextInput value={date} onChange={setDate} placeholder="Дата" />
+      <DateInput value={date} onChange={setDate} required />
       <TextInput value={desc} onChange={setDesc} placeholder="Описание" required />
       <TextInput value={cost} onChange={setCost} placeholder="Стоимость, ₽" required />
     </>
