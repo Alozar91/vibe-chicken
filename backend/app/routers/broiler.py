@@ -41,6 +41,12 @@ def batches(db: Session = Depends(get_db)):
     return svc.list_batches(db)
 
 
+@router.get("/next-code")
+def suggest_next_code(prefix: str | None = None, db: Session = Depends(get_db)):
+    """Подсказка номера новой партии (префикс + порядковый номер)."""
+    return {"code": _handle(svc.next_code, db, prefix)}
+
+
 @router.post("", response_model=BatchOut, status_code=201)
 def create_batch(data: BatchIn, db: Session = Depends(get_db)):
     return _handle(svc.create_batch, db, data)

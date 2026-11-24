@@ -78,6 +78,24 @@ def get_batch(db: Session, batch_id: int) -> BroilerBatch:
     return _get_batch(db, batch_id)
 
 
+def next_code(db: Session, prefix: str | None = None) -> str:
+    """Подсказка номера новой партии: префикс (по умолчанию B-ГГГГММ) + порядковый
+    номер в рамках префикса. Если есть B-202611-1 и B-202611-2 → B-202611-3;
+    если партий с префиксом нет → B-202611-1. Пользователь может исправить.
+    """
+    if not prefix:
+        prefix = f"B-{Date.today().strftime('%Y%m')}"
+    rows = db.scalars(
+        select(BroilerBatch.code).where(BroilerBatch.code.like(f"{prefix}-%"))
+    ).all()
+    max_n = 0
+    for code in rows:
+        suffix = code[len(prefix) + 1:]
+        if suffix.isdigit():
+            max_n = max(max_n, int(suffix))
+    return f"{prefix}-{max_n + 1}"
+
+
 def create_batch(db: Session, data: BatchIn) -> BroilerBatch:
     _check_vendor_chicks_tag(db, data.vendor_id)
     _check_refs(db, data.place_id)

@@ -9,6 +9,7 @@ import {
   updateBatch,
   listBatches,
   closeBatch,
+  suggestNextCode,
 } from '../../api/broiler'
 import { listPlaces, listVendors } from '../../api/dictionaries'
 import type { BroilerBatch, Place } from '../../api/types'
@@ -80,9 +81,24 @@ export default function BatchesPage() {
     setModalOpen(true)
   }
 
+  /** Локальная подсказка: префикс месяца + следующий номер по уже загруженным партиям. */
+  const localNextCode = () => {
+    const prefix = `B-${today().slice(0, 7).replace('-', '')}`
+    let maxN = 0
+    for (const b of batches) {
+      const m = b.code.match(new RegExp(`^${prefix}-(\\d+)$`))
+      if (m) maxN = Math.max(maxN, Number(m[1]))
+    }
+    return `${prefix}-${maxN + 1}`
+  }
+
   const openCreate = () => {
     setEditingId(null)
-    setCode(`B-${today().slice(0, 7).replace('-', '')}-`)
+    setCode(localNextCode())
+    // уточняем с сервера (там полный список, включая чужие сессии)
+    void suggestNextCode().then((c) => {
+      if (!editingId) setCode(c)
+    }).catch(() => undefined)
     setPlaceId(places[0]?.id.toString() ?? '')
     setStartDate(today())
     setArrivalAge('1')

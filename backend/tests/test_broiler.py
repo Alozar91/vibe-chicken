@@ -394,3 +394,22 @@ def test_batch_arrival_age(db, env):
     assert batch_age_days(grown, on_date=D) == 40
     # возраст на конкретную дату (день поступления) = 30
     assert batch_age_days(grown, on_date=D - timedelta(days=10)) == 30
+
+
+# --- Подсказка номера партии (next_code) ---
+
+
+def test_next_code_sequential(db, env):
+    """B-202611-1 → следующая подсказка B-202611-2; новый месяц → -1."""
+    from app.services import broiler as svc2
+
+    b1 = svc.create_batch(db, _batch_in(env, code="B-202611-1"))
+    assert svc2.next_code(db) == "B-202611-2"
+    svc.create_batch(db, _batch_in(env, code="B-202611-2"))
+    assert svc2.next_code(db) == "B-202611-3"
+    # чужой префикс не мешает
+    assert svc2.next_code(db, "B-202612") == "B-202612-1"
+    # суффикс не-число игнорируется (не влияет на порядковый номер)
+    svc.create_batch(db, _batch_in(env, code="B-202611-старая"))
+    assert svc2.next_code(db) == "B-202611-3"
+    _ = b1

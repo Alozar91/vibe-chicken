@@ -13,6 +13,9 @@ import type {
 } from './types'
 
 export const listBatches = () => api<BroilerBatch[]>('/api/batches')
+export const suggestNextCode = (prefix?: string) =>
+  api<{ code: string }>(`/api/batches/next-code${prefix ? `?prefix=${encodeURIComponent(prefix)}` : ''}`).then((r) => r.code)
+
 export const createBatch = (data: Omit<BroilerBatch, 'id' | 'status' | 'closed_at'>) =>
   api<BroilerBatch>('/api/batches', { method: 'POST', body: JSON.stringify(data) })
 export const updateBatch = (id: number, data: unknown) =>
