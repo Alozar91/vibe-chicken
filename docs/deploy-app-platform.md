@@ -70,3 +70,14 @@ restore последнего бэкапа из S3 → миграции → пр�
   Перед обновлением можно нажать «Создать бэкап» в настройках приложения.
 - Порты 80/443 в compose-манифесте запрещены (используется 8080).
 - Свой SSL-сертификат загрузить нельзя — используется Let's Encrypt платформы.
+
+## Про healthcheck (частый вопрос поддержки)
+
+В манифесте для App Platform healthcheck-блок backend **не нужен и не
+используется** — платформа игнорирует compose-healthchecks для Compose-деплоев.
+Живость проверяет «Путь проверки состояния» из панели (`/api/health`).
+
+На VPS-манифесте (`docker-compose.yml`) healthcheck есть, и команда там —
+`python -c "import urllib.request; ..."`: в образе `python:3.12-slim` нет
+`curl` и `wget`, поэтому классический `curl -f http://localhost/health`
+упал бы с «command not found» и контейнер вечно оставался unhealthy.
