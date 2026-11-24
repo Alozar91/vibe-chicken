@@ -11,6 +11,11 @@
 #    подпути задайте CHICKEN_BASE_PATH (например /chicken/).
 #  - хост-порт 8080: порты 80/443 на платформе зарезервированы под веб-сервер.
 #  - нет restart / healthcheck-команд: рестарты и проверки делает платформа
+#  - depends_on без condition: service_healthy — compose-healthcheck платформа
+#    для деплоев из Compose не поддерживает (healthcheck-блок в манифесте
+#    игнорируется, и ожидание healthy вечно висит → таймаут деплоя).
+#    Порядок старта не критичен: nginx фронтенда просто вернёт 502,
+#    пока бэкенд поднимается (обычно секунды).
 #    (путь проверки состояния: /api/health — задаётся в панели).
 
 services:
@@ -36,6 +41,3 @@ services:
         BASE_PATH: ${CHICKEN_BASE_PATH:-/}
     ports:
       - "8080:80"
-    depends_on:
-      backend:
-        condition: service_healthy

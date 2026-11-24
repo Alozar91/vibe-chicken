@@ -38,6 +38,10 @@ App Platform умеет деплоить из Docker Compose, но с огран
      `CHICKEN_S3_SECRET_ACCESS_KEY` — из шага 1.
 5. Путь проверки состояния: `/api/health` (compose-healthcheck платформа
    для compose-деплоев не использует — путь в панели обязателен).
+   Важно: `depends_on: condition: service_healthy` в манифесте недопустим —
+   compose-healthcheck платформа игнорирует, и ожидание healthy висит до
+   таймаута деплоя («Container ... Waiting»). Поэтому во фронтенда
+   depends_on убран: nginx отдаёт 502 первые секунды, пока бэкенд стартует.
 6. Запустить деплой. Технический домен с SSL выдаётся автоматически.
 
 ## Если нужен стандартный манифест
