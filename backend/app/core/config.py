@@ -38,6 +38,14 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    # S3-синхронизация бэкапов (для платформ без постоянных томов, например
+    # Timeweb App Platform). Все 4 переменные заданы — включена; иначе пассивна.
+    s3_endpoint_url: str = ""
+    s3_bucket: str = ""
+    s3_access_key_id: str = ""
+    s3_secret_access_key: str = ""
+    s3_region: str = "us-east-1"
+
     # Сервер матрицы маршрутов (OSRM). Дефолт — публичный демо-сервер;
     # можно поднять свой и поменять одной строкой в .env
     osrm_url: str = "https://router.project-osrm.org"

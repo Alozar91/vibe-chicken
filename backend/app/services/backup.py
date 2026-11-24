@@ -28,7 +28,12 @@ def backup_dir_for(db_path: Path) -> Path:
 
 
 def run_backup(db_path: Path, backup_dir: Path | None = None) -> Path:
-    """Создать копию БД и удалить старые сверх BACKUP_KEEP."""
+    """Создать копию БД и удалить старые сверх BACKUP_KEEP.
+
+    Если настроена S3-синхронизация (CHICKEN_S3_*) — копия сразу заливается
+    в хранилище (переживёт пересоздание контейнера на App Platform).
+    Ошибка выгрузки не прерывает локальный бэкап.
+    """
     backup_dir = backup_dir or backup_dir_for(db_path)
     backup_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
@@ -44,6 +49,13 @@ def run_backup(db_path: Path, backup_dir: Path | None = None) -> Path:
     dst.close()
     src.close()
     rotate_backups(backup_dir)
+    try:
+        # ленивый импорт: на VPS без S3-переменных модуль пассивен
+        from app.services.s3_backup import S3BackupSync
+
+        S3BackupSync().upload_latest(db_path)
+    except Exception:  # noqa: BLE001 — S3 не должен ломать бэкап
+        pass
     return dest
 
 

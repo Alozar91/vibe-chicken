@@ -1,0 +1,41 @@
+# Вариант docker-compose для Timeweb Cloud App Platform
+# (docs: https://timeweb.cloud/docs/apps/deploying-with-docker-compose).
+#
+# Отличия от docker-compose.yml (VPS):
+#  - директива volumes в App Platform ЗАПРЕЩЕНА → постоянный том недоступен.
+#    Данные переживают повторные деплои через S3: при старте контейнер
+#    разворачивает последний бэкап из Object Storage (если локальной БД нет),
+#    после каждого бэкапа копия заливается в S3 (CHICKEN_S3_* переменные).
+#  - BASE_PATH по умолчанию «/»: приложение публикуется в корне технического
+#    домена App Platform (SSL выдаётся автоматически). Для публикации в
+#    подпути задайте CHICKEN_BASE_PATH (например /chicken/).
+#  - хост-порт 8080: порты 80/443 на платформе зарезервированы под веб-сервер.
+#  - нет restart / healthcheck-команд: рестарты и проверки делает платформа
+#    (путь проверки состояния: /api/health — задаётся в панели).
+
+services:
+  backend:
+    build: ./backend
+    environment:
+      CHICKEN_ADMIN_PASSWORD: ${CHICKEN_ADMIN_PASSWORD:?Задайте CHICKEN_ADMIN_PASSWORD}
+      CHICKEN_SESSION_HTTPS_ONLY: ${CHICKEN_SESSION_HTTPS_ONLY:-true}
+      CHICKEN_SECRET_KEY: ${CHICKEN_SECRET_KEY:-}
+      # S3 (Timeweb Object Storage) — обязательно для сохранности данных
+      CHICKEN_S3_ENDPOINT_URL: ${CHICKEN_S3_ENDPOINT_URL:-}
+      CHICKEN_S3_BUCKET: ${CHICKEN_S3_BUCKET:-}
+      CHICKEN_S3_ACCESS_KEY_ID: ${CHICKEN_S3_ACCESS_KEY_ID:-}
+      CHICKEN_S3_SECRET_ACCESS_KEY: ${CHICKEN_S3_SECRET_ACCESS_KEY:-}
+      CHICKEN_S3_REGION: ${CHICKEN_S3_REGION:-us-east-1}
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        BASE_PATH: ${CHICKEN_BASE_PATH:-/}
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy

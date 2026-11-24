@@ -26,7 +26,17 @@ from app.services import backup as backup_svc
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """При первом запуске создаёт администратора; стартует ночной бэкап."""
+    """При первом запуске: restore БД из S3 (если том непостоянный), создание
+    администратора, ночной бэкап-шедулер."""
+    # Платформы без постоянных томов (App Platform): поднять БД из последнего
+    # S3-бэкапа до миграций. На VPS с volume — пассивно (БД уже на месте).
+    from app.services import s3_backup as s3_svc
+
+    db_path = backup_svc.db_file_path(settings.db_url)
+    if db_path is not None:
+        restored = s3_svc.S3BackupSync().restore_if_needed(db_path)
+        if restored:
+            print(f"[s3] база восстановлена из бэкапа {restored}", flush=True)
     with SessionLocal() as db:
         has_users = db.scalar(select(User.id).limit(1)) is not None
         if not has_users:
