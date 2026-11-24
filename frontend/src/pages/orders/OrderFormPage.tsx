@@ -34,7 +34,7 @@ function rowPriceLabel(r: Row, productTypes: ProductTypeLike[]): string {
   if (r.kind === 'egg') return 'Цена за десяток (необяз.)'
   const pt = productTypes.find((p) => String(p.id) === r.product_type_id)
   if (!pt) return 'Цена за ед. (необяз.)'
-  return pt.unit === 'pieces' ? 'Цена за штуку (необяз.)' : 'Цена за кг (необяз.)'
+  return pt.unit === 'pieces' ? 'Цена за штуку (примерно, необяз.)' : 'Цена за кг (необяз.)'
 }
 
 export default function OrderFormPage() {
