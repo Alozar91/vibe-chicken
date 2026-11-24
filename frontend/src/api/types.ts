@@ -327,6 +327,16 @@ export interface BuyerRow {
   total: number
 }
 
+export interface ProductRow {
+  product_type_id: number | null // null — яйцо (у него нет вида)
+  name: string
+  unit: 'kg' | 'pieces' | 'dozen' // dozen — яйцо
+  kg: number
+  dozen: number | null // только для яйца
+  amount: number
+  sales_count: number
+}
+
 export interface BatchRow {
   id: number
   code: string

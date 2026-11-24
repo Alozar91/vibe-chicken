@@ -5,6 +5,15 @@ import { setUiMode } from '../../lib/uiMode'
 
 export const navSections: { title: string; items: { to: string; label: string; adminOnly?: boolean }[] }[] = [
   {
+    title: 'Отчёты',
+    items: [
+      { to: '/reports/money', label: 'Деньги' },
+      { to: '/reports/sales', label: 'Продажи' },
+      { to: '/reports/eggs', label: 'Яйцо' },
+      { to: '/reports/batches', label: 'Партии' },
+    ],
+  },
+  {
     title: 'Справочники',
     items: [
       { to: '/dictionaries/places', label: 'Места' },
@@ -20,7 +29,6 @@ export const navSections: { title: string; items: { to: string; label: string; a
       { to: '/money', label: 'Журнал денег' },
       { to: '/orders', label: 'Заказы' },
       { to: '/routes', label: 'Маршруты' },
-      { to: '/reports', label: 'Отчёты' },
       { to: '/feed', label: 'Склад корма' },
       { to: '/batches', label: 'Партии бройлеров' },
       { to: '/flocks', label: 'Несушки и яйцо' },

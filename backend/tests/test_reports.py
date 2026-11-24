@@ -65,6 +65,7 @@ def env(db):
         "place_id": place.id, "lay_place_id": lay_place.id, "buyer_id": buyer.id,
         "income_id": cat_inc.id, "expense_id": cat_exp.id,
         "feed_cat": feed_cat.id, "feed_brand": brand.id, "vendor_id": vendor.id,
+        "ptype_id": product.id,
     }
 
 
@@ -134,12 +135,12 @@ def test_batches_report_feed_cost(db, env):
     # закупка корма: 100 кг за 5000 → 50 ₽/кг
     feed_svc.create_purchase(db, feed_svc.FeedPurchaseIn(
         date=TODAY - timedelta(days=20), feed_category_id=env["feed_cat"],
-        feed_brand_id=env["feed_brand"], vendor_id=env["vendor_id"],
+        feed_brand_id=env["vendor_id"], vendor_id=env["vendor_id"],
         kg=100, total_cost=5000, comment=None))
     batch = _batch(db, env)
     bro.create_feeding(db, batch.id, FeedingIn(
         date=TODAY - timedelta(days=10), feed_category_id=env["feed_cat"],
-        feed_brand_id=env["feed_brand"], kg=30))
+        feed_brand_id=env["vendor_id"], kg=30))
     bro.create_mortality(db, batch.id, MortalityIn(date=TODAY - timedelta(days=5), head_count=3, cause=None))
     bro.create_slaughter(db, batch.id, SlaughterIn(
         date=TODAY, head_count=50,
@@ -179,11 +180,11 @@ def test_dashboard_summary(db, env):
     # корм: 100 кг куплено, 30 скормлено → 70 на складе
     feed_svc.create_purchase(db, feed_svc.FeedPurchaseIn(
         date=TODAY - timedelta(days=20), feed_category_id=env["feed_cat"],
-        feed_brand_id=env["feed_brand"], vendor_id=env["vendor_id"],
+        feed_brand_id=env["vendor_id"], vendor_id=env["vendor_id"],
         kg=100, total_cost=5000, comment=None))
     bro.create_feeding(db, batch.id, FeedingIn(
         date=TODAY - timedelta(days=10), feed_category_id=env["feed_cat"],
-        feed_brand_id=env["feed_brand"], kg=30))
+        feed_brand_id=env["vendor_id"], kg=30))
 
     # яйцо за текущий месяц
     flock = lay.create_flock(db, lay.LayFlockIn(
@@ -240,3 +241,36 @@ def test_dashboard_closed_batch_has_no_age(db, env):
     assert len(mine) == 1
     assert mine[0].status == "closed" and mine[0].age_days is None
     assert mine[0].heads_alive == 3
+
+
+# --- Продажи по видам продукции (products) ---
+
+
+def test_products_aggregation(db, env):
+    """Бройлер по видам + яйцо отдельной строкой; сортировка по сумме."""
+    batch = _batch(db, env, code="B-PRD-1")
+    bro.create_slaughter(db, batch.id, SlaughterIn(
+        date=TODAY, head_count=10,
+        outputs=[SlaughterOutputIn(product_type_id=env["ptype_id"], kg=15.0)],
+    ))
+    bro.create_sale(db, batch.id, SaleIn(
+        date=TODAY, product_type_id=env["vendor_id"], product_kg=10.0,
+        price_per_kg=300.0, buyer_id=env["buyer_id"],
+    ))
+    bro.create_sale(db, batch.id, SaleIn(
+        date=TODAY, product_type_id=env["vendor_id"], product_kg=2.0,
+        price_per_kg=300.0,
+    ))
+    lay.create_sale(db, EggSaleIn(
+        date=TODAY, dozens=5, price_per_ten=60.0, buyer_id=env["buyer_id"]))
+    lay.create_sale(db, EggSaleIn(date=TODAY, dozens=3, price_per_ten=60.0))
+
+    rows = rep.products(db, months=12)
+    by_id = {r.product_type_id: r for r in rows}
+    egg = by_id[None]
+    assert egg.name == "Яйцо" and egg.unit == "dozen"
+    assert egg.dozen == 8 and egg.amount == 480.0 and egg.sales_count == 2
+    carcass = by_id[env["vendor_id"]]
+    assert carcass.kg == 12.0 and carcass.amount == 3600.0 and carcass.sales_count == 2
+    # сортировка по сумме: продукция (3600) выше яйца (480)
+    assert rows[0].product_type_id == env["vendor_id"]

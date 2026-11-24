@@ -43,6 +43,18 @@ class BuyerRow(BaseModel):
     total: float
 
 
+class ProductRow(BaseModel):
+    """Продажи по виду продукции за период (яйцо — отдельной строкой)."""
+
+    product_type_id: int | None  # None — яйцо (у него нет вида)
+    name: str
+    unit: str  # kg | pieces | dozen (яйцо)
+    kg: float  # вес продаж (для pieces — вес тушек)
+    dozen: int | None = None  # только для яйца, дес
+    amount: float
+    sales_count: int
+
+
 class BatchRow(BaseModel):
     """Строка сравнения партий (экономика партии)."""
 

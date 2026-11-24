@@ -22,7 +22,10 @@ import FlockDetailPage from './pages/layers/FlockDetailPage'
 import OrdersPage from './pages/orders/OrdersPage'
 import OrderFormPage from './pages/orders/OrderFormPage'
 import OrderDetailPage from './pages/orders/OrderDetailPage'
-import ReportsPage from './pages/reports/ReportsPage'
+import ReportsMoneyPage from './pages/reports/ReportsMoneyPage'
+import ReportsSalesPage from './pages/reports/ReportsSalesPage'
+import ReportsEggPage from './pages/reports/ReportsEggPage'
+import ReportsBatchesPage from './pages/reports/ReportsBatchesPage'
 import UsersPage from './pages/UsersPage'
 import RoutesPage from './pages/routes/RoutesPage'
 import DashboardPage from './pages/DashboardPage'
@@ -73,7 +76,11 @@ export default function App() {
           <Route path="/orders/new" element={<OrderFormPage />} />
           <Route path="/orders/:id" element={<Responsive desktop={<OrderDetailPage />} mobile={<OrderDetailMobile />} />} />
           <Route path="/orders/:id/edit" element={<OrderFormPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/reports" element={<Navigate to="/reports/money" replace />} />
+          <Route path="/reports/money" element={<ReportsMoneyPage />} />
+          <Route path="/reports/sales" element={<ReportsSalesPage />} />
+          <Route path="/reports/eggs" element={<ReportsEggPage />} />
+          <Route path="/reports/batches" element={<ReportsBatchesPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/routes" element={<RoutesPage />} />

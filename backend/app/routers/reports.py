@@ -14,6 +14,7 @@ from app.schemas.reports import (
     DashboardOut,
     EggMonthPoint,
     MonthPoint,
+    ProductRow,
 )
 from app.services import reports as svc
 
@@ -57,6 +58,12 @@ def eggs(months: int = Query(default=6, ge=1, le=24), db: Session = Depends(get_
 @router.get("/buyers", response_model=list[BuyerRow])
 def buyers(months: int = Query(default=12, ge=1, le=24), db: Session = Depends(get_db)):
     return svc.buyers(db, _check_months(months))
+
+
+@router.get("/products", response_model=list[ProductRow])
+def products(months: int = Query(default=12, ge=1, le=24), db: Session = Depends(get_db)):
+    """Продажи по видам продукции за период (яйцо — отдельной строкой)."""
+    return svc.products(db, _check_months(months))
 
 
 @router.get("/batches", response_model=list[BatchRow])

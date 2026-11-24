@@ -17,7 +17,7 @@ from app.models.broiler import (
     BatchWeighing,
     BroilerBatch,
 )
-from app.models.dictionaries import Buyer, Place
+from app.models.dictionaries import Buyer, Place, ProductType
 from app.models.layers import EggCollection, EggSale, EggSelfUse
 from app.models.orders import Order, OrderItem
 from app.models.warehouse import FeedPurchase
@@ -32,6 +32,7 @@ from app.schemas.reports import (
     DashboardWeighing,
     EggMonthPoint,
     MonthPoint,
+    ProductRow,
 )
 from app.services import broiler as broiler_svc
 from app.services import feed as feed_svc
@@ -173,6 +174,54 @@ def buyers(db: Session, months: int = 12, today: date | None = None) -> list[Buy
             total=round(v["broiler_amount"] + v["egg_amount"], 2),
         ))
     return sorted(rows, key=lambda r: -r.total)
+
+
+def products(db: Session, months: int = 12, today: date | None = None) -> list[ProductRow]:
+    """Продажи по видам продукции за период (§4.9): бройлерная продукция
+    по видам справочника + яйцо отдельной строкой (в дес). Сортировка по сумме.
+    """
+    start = _period_start(months, today)
+    acc: dict[int | None, dict[str, float]] = {}
+
+    def _add(key: int | None, field: str, value: float) -> None:
+        row = acc.setdefault(key, {"kg": 0.0, "amount": 0.0, "count": 0.0, "dozen": 0.0})
+        row[field] = row[field] + value
+
+    # продажи продукции: вес и сумма по виду
+    stmt = select(
+        BatchSale.product_type_id, BatchSale.product_kg, BatchSale.total_amount
+    ).where(BatchSale.date >= start)
+    for pt_id, kg, amount in db.execute(stmt):
+        _add(pt_id, "kg", float(kg))
+        _add(pt_id, "amount", float(amount))
+        _add(pt_id, "count", 1)
+    # яйцо: product_type_id = None
+    for dozens, amount in db.execute(
+            select(EggSale.dozens, EggSale.total_amount).where(EggSale.date >= start)):
+        _add(None, "amount", float(amount))
+        _add(None, "count", 1)
+        _add(None, "dozen", float(dozens))
+
+    type_names = {t.id: t.name for t in db.scalars(select(ProductType))}
+    type_units = {t.id: t.unit for t in db.scalars(select(ProductType))}
+    rows = []
+    for key, v in acc.items():
+        if key is None:
+            rows.append(ProductRow(
+                product_type_id=None, name="Яйцо", unit="dozen",
+                kg=0.0, dozen=int(v["dozen"]),
+                amount=round(v["amount"], 2), sales_count=int(v["count"]),
+            ))
+        else:
+            rows.append(ProductRow(
+                product_type_id=key,
+                name=type_names.get(key, f"Вид {key}"),
+                unit=type_units.get(key, "kg"),
+                kg=round(v["kg"], 3),
+                amount=round(v["amount"], 2),
+                sales_count=int(v["count"]),
+            ))
+    return sorted(rows, key=lambda r: -r.amount)
 
 
 def _feed_price_per_kg(db: Session) -> dict[tuple[int, int], float]:
